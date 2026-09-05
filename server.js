@@ -12,13 +12,13 @@ app.get('/', (req, res) => {
     res.sendFile(path.join(__dirname, 'public', 'index.html'));
 });
 
-// الاتصال بقاعدة بيانات PostgreSQL عبر متغير البيئةDATABASE_URL
+// الاتصال بقاعدة بيانات PostgreSQL عبر DATABASE_URL
 const pool = new Pool({
     connectionString: process.env.DATABASE_URL,
     ssl: process.env.DATABASE_URL ? { rejectUnauthorized: false } : false
 });
 
-// إنشاء الجداول وبذر البيانات الأساسية تلقائياً
+// تجهيز الجداول والبذور الافتراضية
 async function initDB() {
     try {
         await pool.query(`
@@ -83,7 +83,7 @@ async function initDB() {
             ON CONFLICT (id) DO NOTHING;
         `);
 
-        // التأكد من المنتجات وإضافتها لو الجدول فاضي
+        // بذر المنتجات إذا كان الجدول فاضي
         const prodCheck = await pool.query(`SELECT COUNT(*) FROM products`);
         if (parseInt(prodCheck.rows[0].count) === 0) {
             await pool.query(`
@@ -93,17 +93,18 @@ async function initDB() {
                 ('بيبسي', 'مشروبات', 12, 18, 50, 0),
                 ('ماء', 'مشروبات', 3, 7, 100, 0);
             `);
-            console.log('تم إضافة منتجات افتراضية بنجاح.');
+            console.log('تم إضافة منتجات افتراضية تلقائياً.');
         }
 
-        console.log('تم الاتصال بقاعدة البيانات وتجهيز الجداول.');
+        console.log('تم الاتصال والتأكد من جداول PostgreSQL بنجاح.');
     } catch (err) {
-        console.error('خطأ في الاتصال بالـ Database:', err);
+        console.error('خطأ أثناء تجهيز قاعدة البيانات:', err);
     }
 }
+
 initDB();
 
-// --- API Endpoints ---
+// --- APIs ---
 
 // 1. تسجيل الدخول
 app.post('/api/login', async (req, res) => {
@@ -177,11 +178,16 @@ app.post('/api/start-shift', async (req, res) => {
     }
 });
 
-// 4. المنتجات
+// 4. المنتجات (تحويل الأسعار إلى أرقام float)
 app.get('/api/products', async (req, res) => {
     try {
         const result = await pool.query(`SELECT * FROM products ORDER BY id ASC`);
-        res.json(result.rows);
+        const formatted = result.rows.map(p => ({
+            ...p,
+            cost_price: parseFloat(p.cost_price || 0),
+            selling_price: parseFloat(p.selling_price || 0)
+        }));
+        res.json(formatted);
     } catch (err) {
         res.status(500).json({ error: err.message });
     }
@@ -240,7 +246,7 @@ app.get('/api/expenses/:shift_id', async (req, res) => {
     }
 });
 
-// 6. الـ Checkout (إتمام الشراء)
+// 6. Checkout
 app.post('/api/checkout', async (req, res) => {
     const { shift_id, cart, is_staff_order, paid_amount, discount_amount = 0 } = req.body;
     if (!cart || cart.length === 0) return res.status(400).json({ error: 'السلة فارغة' });
@@ -253,7 +259,6 @@ app.post('/api/checkout', async (req, res) => {
         const dbProdRes = await client.query(`SELECT * FROM products WHERE id = ANY($1::int[])`, [productIds]);
         const dbProductMap = new Map(dbProdRes.rows.map(p => [p.id, p]));
 
-        // التحقق من المخزون
         for (const item of cart) {
             const dbProd = dbProductMap.get(item.id);
             if (!dbProd) throw new Error('المنتج غير موجود');
@@ -382,7 +387,11 @@ app.get('/api/admin/dashboard', async (req, res) => {
                 collected_stock_cost: parseFloat(stockCol.rows[0].collected_stock_cost),
                 remaining_stock_cost: parseFloat(stockRem.rows[0].remaining_stock_cost)
             },
-            products: prodRes.rows
+            products: prodRes.rows.map(p => ({
+                ...p,
+                cost_price: parseFloat(p.cost_price || 0),
+                selling_price: parseFloat(p.selling_price || 0)
+            }))
         });
     } catch (err) {
         res.status(500).json({ error: err.message });
