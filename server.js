@@ -8,7 +8,7 @@ const PORT = process.env.PORT || 3000;
 app.use(express.json());
 app.use(express.static(path.join(__dirname, 'public')));
 
-// الاتصال بقاعدة بيانات PostgreSQL باستخدام البيئة على Render
+// الاتصال بقاعدة بيانات PostgreSQL (يدعم البيئة المحلية و Render)
 const pool = new Pool({
     connectionString: process.env.DATABASE_URL,
     ssl: process.env.DATABASE_URL ? { rejectUnauthorized: false } : false
@@ -368,7 +368,7 @@ app.post('/api/admin/force-close-shift', async (req, res) => {
     }
 });
 
-// توجيه الصفحة الرئيسية لـ index.html
+// توجيه جميع الطلبات الأخرى إلى index.html
 app.get('*', (req, res) => {
     res.sendFile(path.join(__dirname, 'public', 'index.html'));
 });
