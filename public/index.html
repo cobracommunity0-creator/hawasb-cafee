@@ -347,12 +347,12 @@
 
                             <div class="form-group-floating">
                                 <label for="prod-cost"><i class="fa-solid fa-coins"></i> سعر التكلفة</label>
-                                <input type="number" step="0.5" id="prod-cost" placeholder="0.0" required>
+                                <input type="number" step="0" id="prod-cost" placeholder="0.0" required>
                             </div>
 
                             <div class="form-group-floating">
                                 <label for="prod-price"><i class="fa-solid fa-money-bill-wave"></i> سعر البيع</label>
-                                <input type="number" step="0.5" id="prod-price" placeholder="0.0" required>
+                                <input type="number" step="0" id="prod-price" placeholder="0.0" required>
                             </div>
 
                             <div class="form-group-floating">
@@ -1168,8 +1168,8 @@
             row.style.cssText = 'display: flex; gap: 10px; margin-bottom: 10px; align-items: center;';
             row.innerHTML = `
                 <input type="text" value="${name}" placeholder="اسم الخيار" class="var-name" style="flex:2; padding:8px; background:var(--bg-base); border:1px solid var(--border-color); color:white; border-radius:6px;">
-                <input type="number" step="0.5" value="${priceMod}" placeholder="+ فرق البيع" class="var-price" style="flex:1; padding:8px; background:var(--bg-base); border:1px solid var(--border-color); color:white; border-radius:6px;">
-                <input type="number" step="0.5" value="${costMod}" placeholder="+ فرق التكلفة" class="var-cost" style="flex:1; padding:8px; background:var(--bg-base); border:1px solid var(--border-color); color:white; border-radius:6px;">
+                <input type="number" step="0" value="${priceMod}" placeholder="+ فرق البيع" class="var-price" style="flex:1; padding:8px; background:var(--bg-base); border:1px solid var(--border-color); color:white; border-radius:6px;">
+                <input type="number" step="0" value="${costMod}" placeholder="+ فرق التكلفة" class="var-cost" style="flex:1; padding:8px; background:var(--bg-base); border:1px solid var(--border-color); color:white; border-radius:6px;">
                 <button onclick="this.parentElement.remove()" style="background:var(--accent-danger); color:white; border:none; padding:8px 12px; border-radius:6px; cursor:pointer;">×</button>`;
             container.appendChild(row);
         }
