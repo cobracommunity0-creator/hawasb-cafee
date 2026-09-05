@@ -377,4 +377,11 @@ app.post('/api/admin/force-close-shift', (req, res) => {
 });
 
 const PORT = process.env.PORT || 3000;
+// خدمة الملفات الثابتة من فولدر public
+app.use(express.static(path.join(__dirname, 'public')));
+
+// توجيه الصفحة الرئيسية لـ index.html
+app.get('/', (req, res) => {
+    res.sendFile(path.join(__dirname, 'public', 'index.html'));
+});
 app.listen(PORT, () => console.log(`🚀 شغال على البورت ${PORT} - حواسب كافيه ❤️`));
