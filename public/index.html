@@ -274,15 +274,11 @@
         });
 
         // دالة إشعارات تنبيه عامة
+        // دالة إشعارات تنبيه خفيفة وسلسة على شكل Toast في الأعلى
         function showAlert(title, icon = 'info', text = '') {
-            Swal.fire({
-                title: title,
-                text: text,
+            Toast.fire({
                 icon: icon,
-                background: '#1e293b',
-                color: '#f8fafc',
-                confirmButtonColor: '#10b981',
-                confirmButtonText: 'حسناً'
+                title: title + (text ? ` - ${text}` : '')
             });
         }
 
