@@ -227,14 +227,15 @@ app.get('/api/product-ingredients/:id', async (req, res) => {
 });
 
 // 8. الأحجام والخيارات
+// حفظ أو تعديل الأحجام والخيارات (أسعار وتكاليف مباشرة)
 app.post('/api/product-variants', async (req, res) => {
     const { product_id, variants } = req.body;
     try {
         await pool.query('DELETE FROM product_variants WHERE product_id = $1', [product_id]);
         for (const v of variants) {
             await pool.query(
-                'INSERT INTO product_variants (product_id, variant_name, price_modifier, cost_modifier) VALUES ($1, $2, $3, $4)',
-                [product_id, v.variant_name, v.price_modifier, v.cost_modifier]
+                'INSERT INTO product_variants (product_id, variant_name, selling_price, cost_price) VALUES ($1, $2, $3, $4)',
+                [product_id, v.variant_name, v.selling_price, v.cost_price]
             );
         }
         res.json({ message: 'تم حفظ الخيارات بنجاح' });
@@ -243,6 +244,7 @@ app.post('/api/product-variants', async (req, res) => {
     }
 });
 
+// جلب خيارات المنتج
 app.get('/api/product-variants/:id', async (req, res) => {
     try {
         const result = await pool.query('SELECT * FROM product_variants WHERE product_id = $1', [req.params.id]);
