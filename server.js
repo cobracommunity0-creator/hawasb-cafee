@@ -1,382 +1,1047 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>حواسب كافيه - Powered By #عمرو_حواسب ❤️</title>
+    <style>
+        :root {
+            --bg-dark: #0f172a;
+            --card-bg: #1e293b;
+            --accent-gold: #f59e0b;
+            --accent-green: #10b981;
+            --accent-red: #ef4444;
+            --accent-blue: #3b82f6;
+            --text-main: #f8fafc;
+            --text-muted: #94a3b8;
+            --border-color: #334155;
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+        body { background: var(--bg-dark); color: var(--text-main); }
+        .hidden { display: none !important; }
+
+        .brand-title { color: var(--accent-gold); font-size: 22px; font-weight: bold; }
+        .brand-tag { color: #f43f5e; font-size: 13px; font-weight: normal; margin-right: 5px; }
+
+        .login-container { max-width: 420px; margin: 80px auto; background: var(--card-bg); padding: 35px; border-radius: 16px; border: 1px solid var(--border-color); box-shadow: 0 10px 25px rgba(0,0,0,0.5); text-align: center; }
+        .login-container input { width: 100%; padding: 12px; margin: 8px 0; background: #0f172a; border: 1px solid var(--border-color); color: white; border-radius: 8px; font-size: 16px; text-align: center; }
+        .login-container button { width: 100%; padding: 12px; background: var(--accent-gold); color: #000; border: none; border-radius: 8px; font-size: 17px; cursor: pointer; font-weight: bold; margin-top: 15px; }
+
+        header { background: #1a2332; border-bottom: 1px solid var(--border-color); color: white; padding: 15px 25px; display: flex; justify-content: space-between; align-items: center; }
+        header button { background: var(--accent-red); color: white; border: none; padding: 8px 16px; border-radius: 6px; cursor: pointer; font-weight: bold; }
+
+        .pos-container { display: flex; height: calc(100vh - 65px); }
+        .products-section { flex: 2.2; padding: 20px; overflow-y: auto; border-left: 1px solid var(--border-color); }
+        .cart-section { flex: 1; padding: 20px; background: var(--card-bg); display: flex; flex-direction: column; }
+
+        .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); gap: 15px; margin-top: 15px; }
+        .card { background: var(--card-bg); padding: 15px; border-radius: 12px; border: 1px solid var(--border-color); text-align: center; cursor: pointer; transition: 0.2s; }
+        .card:hover { transform: translateY(-3px); border-color: var(--accent-gold); }
+
+        .cart-list { flex: 1; overflow-y: auto; margin: 15px 0; border-bottom: 1px solid var(--border-color); }
+        .cart-item { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; background: #0f172a; padding: 10px 14px; border-radius: 8px; border: 1px solid var(--border-color); }
+
+        .btn-action { width: 100%; padding: 12px; font-size: 15px; font-weight: bold; border-radius: 8px; cursor: pointer; border: none; margin-top: 8px; }
+        .btn-checkout { background: var(--accent-green); color: white; }
+        .btn-staff { background: #d97706; color: white; }
+        .btn-info { background: var(--accent-blue); color: white; }
+        .btn-shift { background: var(--accent-red); color: white; margin-top: 12px; }
+
+        .admin-container { padding: 25px; max-width: 1250px; margin: 0 auto; }
+        .stats-cards { display: flex; gap: 20px; margin-bottom: 25px; }
+        .stat-card { flex: 1; background: var(--card-bg); padding: 20px; border-radius: 12px; border: 1px solid var(--border-color); text-align: center; }
+
+        .month-accordion { background: #0b1329; border-radius: 10px; margin-bottom: 18px; border: 1px solid var(--border-color); overflow: hidden; }
+        .month-header { background: #162032; padding: 16px 20px; font-size: 16px; font-weight: bold; cursor: pointer; display: flex; justify-content: space-between; align-items: center; color: var(--accent-gold); }
+        .month-content { display: none; padding: 15px; background: var(--bg-dark); }
+        .month-accordion.active .month-content { display: block; }
+
+        .day-accordion { background: var(--card-bg); border-radius: 8px; margin-bottom: 10px; border: 1px solid var(--border-color); overflow: hidden; }
+        .day-header { background: #26334d; color: var(--text-main); padding: 12px 18px; display: flex; justify-content: space-between; align-items: center; cursor: pointer; font-weight: bold; }
+        .day-content { display: none; padding: 15px; background: #0f172a; }
+        .day-accordion.active .day-content { display: block; }
+
+        table { width: 100%; border-collapse: collapse; background: var(--card-bg); border-radius: 8px; overflow: hidden; margin-top: 8px; border: 1px solid var(--border-color); }
+        th, td { padding: 12px 14px; text-align: center; border-bottom: 1px solid var(--border-color); font-size: 14px; color: var(--text-main); }
+        th { background: #151f30; color: var(--accent-gold); }
+
+        .modal { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); display: flex; justify-content: center; align-items: center; z-index: 999; backdrop-filter: blur(4px); }
+        .modal-content { background: var(--card-bg); width: 90%; max-width: 700px; border-radius: 14px; padding: 25px; max-height: 85vh; overflow-y: auto; border: 1px solid var(--border-color); }
+        .modal-header { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border-color); padding-bottom: 12px; margin-bottom: 18px; }
+        .close-btn { background: var(--accent-red); color: white; border: none; width: 32px; height: 32px; border-radius: 50%; cursor: pointer; font-weight: bold; }
+        
+        .live-badge { display: flex; gap: 10px; justify-content: center; background: #0b1329; padding: 10px; border-radius: 8px; margin-top: 10px; border: 1px solid var(--border-color); }
+        .badge-box { text-align: center; flex: 1; }
+        .badge-box span { font-size: 11px; color: var(--text-muted); display: block; }
+        .badge-box b { font-size: 16px; font-weight: bold; }
+    </style>
+</head>
+<body>
+
+    <div id="login-screen" class="login-container">
+        <h1 class="brand-title">☕ حواسب كافيه</h1>
+        <p class="brand-tag">Powered By #عمرو_حواسب ❤️</p>
+        <h2 style="margin-top:15px;">تسجيل الدخول</h2>
+        <input type="text" id="username" placeholder="اسم المستخدم (admin / cashier)">
+        <input type="password" id="pin" placeholder="رمز الـ PIN">
+        <button onclick="login()">دخول إلى النظام</button>
+    </div>
+
+    <header id="main-header" class="hidden">
+        <div>
+            <span class="brand-title">☕ حواسب كافيه</span>
+            <span class="brand-tag">Powered By #عمرو_حواسب ❤️</span>
+            <span id="user-display" style="margin-right: 20px; font-weight: bold;"></span>
+            <span id="shift-display" style="margin-right: 15px; font-size: 14px; color: var(--accent-gold);"></span>
+        </div>
+        <button onclick="logout()">خروج</button>
+    </header>
+
+    <!-- POS -->
+    <div id="pos-screen" class="pos-container hidden">
+        <div class="products-section">
+            <h3 style="color: var(--accent-gold);">قائمة المنتجات</h3>
+            <div id="products-grid" class="grid"></div>
+        </div>
+
+        <div class="cart-section">
+            <h2>الطلب الحالي</h2>
+            <div class="cart-list" id="cart-list"></div>
+            
+            <h3 style="text-align: center; margin-bottom: 12px;">الإجمالي: <span id="cart-total" style="color: var(--accent-gold);">0</span> ج.م</h3>
+            
+            <div style="background: #0f172a; padding: 12px; border-radius: 8px; margin-bottom: 10px; border: 1px solid var(--border-color);">
+                <label style="font-size: 13px; color: var(--text-muted);">المبلغ المحصل من العميل:</label>
+                <input type="number" id="paid-amount" placeholder="مثلاً: 100" style="width: 100%; padding: 8px; margin-top: 5px; background: #1e293b; border: 1px solid var(--border-color); color: white; border-radius: 6px; text-align: center;" oninput="calculateChange()">
+                <div id="change-box" style="font-size: 13px; margin-top: 6px; color: #f59e0b; font-weight: bold; text-align: center;"></div>
+            </div>
+
+            <button class="btn-action btn-checkout" onclick="checkout(false)">إتمام البيع (سعر عادي)</button>
+            <button class="btn-action btn-staff" onclick="checkout(true)">🛒 طلب موظف (بسعر التكلفة)</button>
+
+            <!-- كروت الإيراد والتيبس المباشر للكاشير -->
+            <div class="live-badge">
+                <div class="badge-box">
+                    <span>🔴 إجمالي الإيراد (Live):</span>
+                    <b id="live-sales" style="color:var(--accent-gold);">0 ج.م</b>
+                </div>
+                <div class="badge-box" style="border-right: 1px solid var(--border-color);">
+                    <span>🎁 إجمالي التيبس (Live):</span>
+                    <b id="live-tips" style="color:#a855f7;">0 ج.م</b>
+                </div>
+            </div>
+
+            <button class="btn-action btn-info" onclick="openMyShiftDetails()">📋 تفاصيل مبيعاتي الحالية</button>
+            <button class="btn-action btn-shift" onclick="endShift()">تقفيل الشيفت</button>
+        </div>
+    </div>
+
+    <!-- ADMIN -->
+    <div id="admin-screen" class="admin-container hidden">
+        <h2 style="color: var(--accent-gold);">لوحة التحكم ومتابعة الشيفتات الحية</h2>
+        <br>
+
+        <div class="stats-cards">
+            <div class="stat-card">
+                <h3 style="color: var(--text-muted);">تغطية الخامات المبيعة</h3>
+                <p id="stat-collected-cost" style="font-size: 22px; font-weight: bold; color: var(--accent-blue); margin-top: 5px;">0 ج.م</p>
+            </div>
+            <div class="stat-card">
+                <h3 style="color: var(--text-muted);">رأس مال بضاعة المطبخ المتبقية</h3>
+                <p id="stat-remaining-cost" style="font-size: 22px; font-weight: bold; color: var(--accent-green); margin-top: 5px;">0 ج.م</p>
+            </div>
+        </div>
+
+        <h3>📁 سجل الشيفتات (مقسم بالشهور والأيام)</h3>
+        <br>
+        <div id="shifts-accordion-container"></div>
+
+        <br>
+        <h3>إدارة الأصناف والأسعار</h3>
+        <form id="product-form" onsubmit="saveProduct(event)" style="background: var(--card-bg); padding: 18px; border-radius: 10px; border: 1px solid var(--border-color); margin: 15px 0; display: flex; gap: 10px; flex-wrap: wrap;">
+            <input type="hidden" id="prod-id">
+            <input type="text" id="prod-name" placeholder="اسم الصنف" required style="padding: 10px; background: #0f172a; border: 1px solid var(--border-color); color: white; border-radius: 6px; flex: 1;">
+            <input type="text" id="prod-category" placeholder="القسم" required style="padding: 10px; background: #0f172a; border: 1px solid var(--border-color); color: white; border-radius: 6px; flex: 1;">
+            <input type="number" step="0.5" id="prod-cost" placeholder="سعر التكلفة" required style="padding: 10px; background: #0f172a; border: 1px solid var(--border-color); color: white; border-radius: 6px; width: 110px;">
+            <input type="number" step="0.5" id="prod-price" placeholder="سعر البيع" required style="padding: 10px; background: #0f172a; border: 1px solid var(--border-color); color: white; border-radius: 6px; width: 110px;">
+            <input type="number" id="prod-stock" placeholder="الكمية" value="0" style="padding: 10px; background: #0f172a; border: 1px solid var(--border-color); color: white; border-radius: 6px; width: 90px;">
+            <label style="display:flex; align-items:center; gap: 5px;"><input type="checkbox" id="prod-is-drink"> مشروب/خدمة (ليس له مخزون مباشر)</label>
+            <button type="submit" style="background: var(--accent-green); color: white; border: none; padding: 10px 20px; border-radius: 6px; cursor: pointer; font-weight: bold;">حفظ</button>
+        </form>
+
+        <table>
+            <thead>
+                <tr><th>الصنف</th><th>القسم</th><th>التكلفة</th><th>البيع</th><th>المخزون</th><th>النوع</th><th>إجراءات</th></tr>
+            </thead>
+            <tbody id="products-table-body"></tbody>
+        </table>
+    </div>
+
+    <!-- Modals -->
+    <div id="live-modal" class="modal hidden">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 id="modal-title" style="color: var(--accent-gold);">🔴 المبيعات الحية للشيفت</h3>
+                <button class="close-btn" onclick="closeLiveModal()">×</button>
+            </div>
+            <table>
+                <thead>
+                    <tr><th>الصنف</th><th>الكمية</th><th>سعر الوحدة</th><th>الإجمالي</th><th>التوقيت</th></tr>
+                </thead>
+                <tbody id="live-details-body"></tbody>
+            </table>
+        </div>
+    </div>
+
+    <div id="ingredients-modal" class="modal hidden">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 id="ing-modal-title" style="color: var(--accent-gold);">🧪 ضبط مكونات وخامات الصنف</h3>
+                <button class="close-btn" onclick="closeIngredientsModal()">×</button>
+            </div>
+            <div id="ingredients-form-container"></div>
+            <button onclick="addIngredientRow()" style="background: var(--accent-blue); color: white; border: none; padding: 8px 15px; border-radius: 6px; cursor: pointer; margin-top: 10px;">+ إضافة خامة/مكون</button>
+            <button onclick="saveProductIngredients()" style="background: var(--accent-green); color: white; border: none; padding: 8px 20px; border-radius: 6px; cursor: pointer; margin-top: 10px; float: left; font-weight: bold;">حفظ الوصفة</button>
+        </div>
+    </div>
+
+    <div id="variant-modal" class="modal hidden">
+        <div class="modal-content" style="max-width: 400px; text-align: center;">
+            <div class="modal-header">
+                <h3 id="variant-modal-title" style="color: var(--accent-gold);">اختر الحجم / الإضافة</h3>
+                <button class="close-btn" onclick="closeVariantModal()">×</button>
+            </div>
+            <div id="variant-options-list" style="display: flex; flex-direction: column; gap: 10px; margin-top: 15px;"></div>
+        </div>
+    </div>
+
+    <div id="admin-variants-modal" class="modal hidden">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 id="admin-var-modal-title" style="color: var(--accent-gold);">⚙️ إدارة الأحجام والخيارات</h3>
+                <button class="close-btn" onclick="closeAdminVariantsModal()">×</button>
+            </div>
+            <div id="admin-variants-form-container"></div>
+            <button onclick="addVariantRow()" style="background: var(--accent-blue); color: white; border: none; padding: 8px 15px; border-radius: 6px; cursor: pointer; margin-top: 10px;">+ إضافة خيار / حجم</button>
+            <button onclick="saveProductVariants()" style="background: var(--accent-green); color: white; border: none; padding: 8px 20px; border-radius: 6px; cursor: pointer; margin-top: 10px; float: left; font-weight: bold;">حفظ الخيارات</button>
+        </div>
+    </div>
+
+    <script>
+        let currentUser = null;
+        let currentShiftId = null;
+        let products = [];
+        let cart = JSON.parse(localStorage.getItem('hawasb_cart')) || [];
+        let currentEditingParentId = null;
+        let selectedProductForVariant = null;
+        let currentEditingVariantProductId = null;
+
+        async function login() {
+            const username = document.getElementById('username').value;
+            const pin = document.getElementById('pin').value;
+
+            const res = await fetch('/api/login', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ username, pin })
+            });
+
+            if (res.ok) {
+                const data = await res.json();
+                currentUser = data.user;
+
+                document.getElementById('login-screen').classList.add('hidden');
+                document.getElementById('main-header').classList.remove('hidden');
+                document.getElementById('user-display').innerText = `المستخدم: ${currentUser.username}`;
+
+                if (currentUser.role === 'admin') {
+                    document.getElementById('admin-screen').classList.remove('hidden');
+                    loadAdminDashboard();
+                } else {
+                    if (data.activeShift) {
+                        currentShiftId = data.activeShift.id;
+                    } else {
+                        const shiftRes = await fetch('/api/start-shift', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ user_id: currentUser.id })
+                        });
+                        const shiftData = await shiftRes.json();
+                        currentShiftId = shiftData.shift_id;
+                    }
+
+                    document.getElementById('shift-display').innerText = `(الشيفت الحالي: #${currentShiftId})`;
+                    document.getElementById('pos-screen').classList.remove('hidden');
+                    loadProducts();
+                    renderCart();
+                    loadLiveShiftSummary();
+                }
+            } else { alert('بيانات الدخول غير صحيحة'); }
+        }
+
+        async function loadProducts() {
+            const res = await fetch('/api/products');
+            products = await res.json();
+
+            for (let p of products) {
+                const varRes = await fetch(`/api/product-variants/${p.id}`);
+                p.variants = await varRes.json();
+            }
+
+            const grid = document.getElementById('products-grid');
+            grid.innerHTML = '';
+            products.forEach(p => {
+                const hasVariants = p.variants && p.variants.length > 0;
+                grid.innerHTML += `
+                    <div class="card" onclick="handleProductClick(${p.id})">
+                        <h4>${p.name}</h4>
+                        <p>${hasVariants ? 'خيارات متعددة' : p.selling_price + ' ج.م'}</p>
+                        <small style="color:var(--text-muted);">${p.is_drink ? 'مشروب/خدمة' : 'مخزون: ' + p.stock_quantity}</small>
+                    </div>`;
+            });
+        }
+
+        function handleProductClick(id) {
+            const p = products.find(x => x.id === id);
+            if (p.variants && p.variants.length > 0) {
+                selectedProductForVariant = p;
+                document.getElementById('variant-modal-title').innerText = `خيارات ${p.name}`;
+                const container = document.getElementById('variant-options-list');
+                container.innerHTML = '';
+
+                p.variants.forEach(v => {
+                    const finalPrice = p.selling_price + v.price_modifier;
+                    container.innerHTML += `
+                        <button class="btn-action btn-info" onclick="selectVariantAndAddToCart('${v.variant_name}', ${v.price_modifier}, ${v.cost_modifier})">
+                            ${v.variant_name} (${finalPrice} ج.م)
+                        </button>`;
+                });
+
+                document.getElementById('variant-modal').classList.remove('hidden');
+            } else {
+                addToCart(p.id, p.name, p.selling_price, p.cost_price);
+            }
+        }
+
+        function selectVariantAndAddToCart(variantName, priceModifier, costModifier) {
+            const p = selectedProductForVariant;
+            const fullName = `${p.name} (${variantName})`;
+            const finalPrice = p.selling_price + priceModifier;
+            const finalCost = p.cost_price + costModifier;
+
+            addToCart(p.id, fullName, finalPrice, finalCost);
+            closeVariantModal();
+        }
+
+        function closeVariantModal() { document.getElementById('variant-modal').classList.add('hidden'); }
+
+        function addToCart(id, name, price, cost) {
+            const item = cart.find(x => x.cartItemId === `${id}_${name}`);
+            if (item) {
+                item.qty++;
+            } else {
+                cart.push({ cartItemId: `${id}_${name}`, id, name, price, cost, qty: 1 });
+            }
+            saveCartAndRender();
+        }
+
+        function removeFromCart(i) { 
+            cart.splice(i, 1); 
+            saveCartAndRender(); 
+        }
+
+        function saveCartAndRender() {
+            localStorage.setItem('hawasb_cart', JSON.stringify(cart));
+            renderCart();
+        }
+
+        function renderCart() {
+            const list = document.getElementById('cart-list');
+            list.innerHTML = '';
+            let total = 0;
+            cart.forEach((item, index) => {
+                total += item.price * item.qty;
+                list.innerHTML += `
+                    <div class="cart-item">
+                        <span>${item.name} x${item.qty}</span>
+                        <div><b>${item.price * item.qty} ج.م</b> <button onclick="removeFromCart(${index})" style="background:var(--accent-red); color:white; border:none; padding:2px 8px; border-radius:4px; margin-right:5px; cursor:pointer;">×</button></div>
+                    </div>`;
+            });
+            document.getElementById('cart-total').innerText = total;
+            calculateChange();
+        }
+
+        function calculateChange() {
+            const total = parseFloat(document.getElementById('cart-total').innerText) || 0;
+            const paid = parseFloat(document.getElementById('paid-amount').value) || 0;
+            const changeBox = document.getElementById('change-box');
+            if (paid > total && total > 0) {
+                changeBox.innerText = `الباقي: ${paid - total} ج.م (يحول تلقائياً لـ Tips)`;
+            } else changeBox.innerText = '';
+        }
+
+        async function checkout(isStaffOrder = false) {
+            if (cart.length === 0) return alert('السلة فارغة!');
+            const paidAmount = parseFloat(document.getElementById('paid-amount').value) || 0;
+
+            const res = await fetch('/api/checkout', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ shift_id: currentShiftId, cart, is_staff_order: isStaffOrder, paid_amount: paidAmount })
+            });
+
+            if (res.ok) {
+                const data = await res.json();
+                let msg = 'تم إتمام البيع بنجاح!';
+                if (data.tip > 0) msg += `\n🎁 تم إضافة تيبس للشيفت: ${data.tip} ج.م`;
+                alert(msg);
+                cart = [];
+                localStorage.removeItem('hawasb_cart');
+                document.getElementById('paid-amount').value = '';
+                document.getElementById('change-box').innerText = '';
+                renderCart();
+                loadProducts();
+                loadLiveShiftSummary();
+            }
+        }
+
+        async function loadLiveShiftSummary() {
+            if (!currentShiftId) return;
+            const res = await fetch(`/api/shift-summary/${currentShiftId}`);
+            if (res.ok) {
+                const data = await res.json();
+                document.getElementById('live-sales').innerText = `${data.total_sales} ج.م`;
+                document.getElementById('live-tips').innerText = `${data.total_tips} ج.م`;
+            }
+        }
+
+        function openMyShiftDetails() {
+            if (!currentShiftId) return alert('لا يوجد شيفت مفتوح حالياً!');
+            openLiveShiftModal(currentShiftId, currentUser.username);
+        }
+
+        async function endShift() {
+            const notes = prompt('أدخل ملاحظات إغلاق الشيفت:');
+            if (notes === null) return;
+            await fetch('/api/end-shift', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ shift_id: currentShiftId, notes })
+            });
+            alert('تم تقفيل الشيفت بنجاح');
+            localStorage.removeItem('hawasb_cart');
+            logout();
+        }
+
+        // --- لوحة التحكم ---
+        async function loadAdminDashboard() {
+            const res = await fetch('/api/admin/dashboard');
+            const data = await res.json();
+            products = data.products;
+
+            document.getElementById('stat-collected-cost').innerText = `${data.stats.collected_stock_cost} ج.م`;
+            document.getElementById('stat-remaining-cost').innerText = `${data.stats.remaining_stock_cost} ج.م`;
+
+            const structuredData = {};
+
+            data.shifts.forEach(s => {
+                const d = new Date(s.start_time);
+                const monthKey = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+                const dateKey = s.shift_date;
+
+                if (!structuredData[monthKey]) {
+                    structuredData[monthKey] = { sales: 0, profit: 0, tips: 0, days: {} };
+                }
+                if (!structuredData[monthKey].days[dateKey]) {
+                    structuredData[monthKey].days[dateKey] = { sales: 0, profit: 0, tips: 0, shifts: [] };
+                }
+
+                structuredData[monthKey].sales += s.total_sales;
+                structuredData[monthKey].profit += s.total_profit;
+                structuredData[monthKey].tips += s.total_tips;
+
+                structuredData[monthKey].days[dateKey].sales += s.total_sales;
+                structuredData[monthKey].days[dateKey].profit += s.total_profit;
+                structuredData[monthKey].days[dateKey].tips += s.total_tips;
+                structuredData[monthKey].days[dateKey].shifts.push(s);
+            });
+
+            const container = document.getElementById('shifts-accordion-container');
+            container.innerHTML = '';
+
+            for (const monthKey in structuredData) {
+                const monthInfo = structuredData[monthKey];
+                let daysHtml = '';
+
+                for (const dateKey in monthInfo.days) {
+                    const dayInfo = monthInfo.days[dateKey];
+                    let tableRows = '';
+
+                    dayInfo.shifts.forEach(s => {
+                        let statusBtn = s.status === 'open' 
+                            ? `<button onclick="forceCloseShift(${s.id})" style="background:#e67e22; color:white; border:none; padding:4px 8px; border-radius:4px; cursor:pointer;">إغلاق طوارئ</button>`
+                            : '<span style="color:var(--accent-green);">مغلق</span>';
+
+                        tableRows += `
+                            <tr>
+                                <td>#${s.id}</td>
+                                <td><b>${s.username}</b></td>
+                                <td>${new Date(s.start_time).toLocaleTimeString('ar-EG')}</td>
+                                <td>${s.end_time ? new Date(s.end_time).toLocaleTimeString('ar-EG') : 'جارٍ...'}</td>
+                                <td><b style="color:var(--accent-gold);">${s.total_sales} ج.م</b></td>
+                                <td style="color:var(--accent-green);"><b>${s.total_profit} ج.م</b></td>
+                                <td style="color:#a855f7;"><b>${s.total_tips} ج.م</b></td>
+                                <td>${statusBtn}</td>
+                                <td>${s.notes || '-'}</td>
+                                <td>
+                                    <button onclick="openLiveShiftModal(${s.id}, '${s.username}')" style="background:var(--accent-blue); color:white; border:none; padding:5px 10px; border-radius:4px; cursor:pointer; font-weight:bold;">
+                                        🔴 مباشر / المبيعات
+                                    </button>
+                                </td>
+                            </tr>`;
+                    });
+
+                    daysHtml += `
+                        <div class="day-accordion" id="accordion-day-${dateKey}">
+                            <div class="day-header" onclick="toggleAccordion('accordion-day-${dateKey}', event)">
+                                <span>📅 يوم: ${dateKey} (${dayInfo.shifts.length} شيفت)</span>
+                                <span style="font-size: 13px; font-weight: normal;">
+                                    مبيعات: <b style="color:var(--accent-gold);">${dayInfo.sales} ج.م</b> | أرباح: <b style="color:var(--accent-green);">${dayInfo.profit} ج.م</b> | تيبس: <b style="color:#a855f7;">${dayInfo.tips} ج.م</b> 🔽
+                                </span>
+                            </div>
+                            <div class="day-content">
+                                <table>
+                                    <thead>
+                                        <tr>
+                                            <th>#</th><th>الكاشير</th><th>بدء</th><th>إغلاق</th><th>المبيعات</th><th>الربح</th><th>التيبس</th><th>الحالة</th><th>ملاحظات</th><th>اللايف والمبيعات</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>${tableRows}</tbody>
+                                </table>
+                            </div>
+                        </div>`;
+                }
+
+                container.innerHTML += `
+                    <div class="month-accordion" id="accordion-month-${monthKey}">
+                        <div class="month-header" onclick="toggleAccordion('accordion-month-${monthKey}', event)">
+                            <span>🗓️ شهر: ${monthKey}</span>
+                            <span style="font-size: 14px; font-weight: normal;">
+                                إجمالي الشهر: <b style="color:var(--accent-gold);">${monthInfo.sales} ج.م</b> | الأرباح: <b style="color:var(--accent-green);">${monthInfo.profit} ج.م</b> | التيبس: <b style="color:#a855f7;">${monthInfo.tips} ج.م</b> 🔽
+                            </span>
+                        </div>
+                        <div class="month-content">${daysHtml}</div>
+                    </div>`;
+            }
+
+            const prodBody = document.getElementById('products-table-body');
+            prodBody.innerHTML = '';
+            products.forEach(p => {
+                prodBody.innerHTML += `
+                    <tr>
+                        <td>${p.name}</td><td>${p.category}</td><td>${p.cost_price} ج.م</td><td>${p.selling_price} ج.م</td>
+                        <td>${p.is_drink ? '-' : p.stock_quantity}</td><td>${p.is_drink ? 'مشروب/خدمة' : 'بضاعة'}</td>
+                        <td>
+                            <button onclick='editProduct(${JSON.stringify(p)})' style="background:var(--accent-blue); color:white; border:none; padding:4px 8px; border-radius:4px; cursor:pointer;">تعديل</button>
+                            <button onclick='openIngredientsModal(${p.id}, "${p.name}")' style="background:#8e44ad; color:white; border:none; padding:4px 8px; border-radius:4px; cursor:pointer; font-weight:bold;">🧪 المكونات</button>
+                            <button onclick='openAdminVariantsModal(${p.id}, "${p.name}")' style="background:#0284c7; color:white; border:none; padding:4px 8px; border-radius:4px; cursor:pointer; font-weight:bold;">⚙️ الأحجام/الخيارات</button>
+                            <button onclick='deleteProduct(${p.id}, "${p.name}")' style="background:var(--accent-red); color:white; border:none; padding:4px 8px; border-radius:4px; cursor:pointer; font-weight:bold; margin-right:4px;">حذف</button>
+                        </td>
+                    </tr>`;
+            });
+        }
+
+        async function deleteProduct(id, name) {
+            if (confirm(`هل أنت تأكد من حذف المنتج "${name}"؟`)) {
+                const res = await fetch(`/api/products/${id}`, { method: 'DELETE' });
+                if (res.ok) {
+                    alert('تم حذف المنتج بنجاح');
+                    loadAdminDashboard();
+                }
+            }
+        }
+
+        async function openIngredientsModal(productId, productName) {
+            currentEditingParentId = productId;
+            document.getElementById('ing-modal-title').innerText = `🧪 ضبط مكونات (${productName})`;
+            const res = await fetch(`/api/product-ingredients/${productId}`);
+            const existingIngredients = await res.json();
+            const container = document.getElementById('ingredients-form-container');
+            container.innerHTML = '';
+            if (existingIngredients.length === 0) addIngredientRow();
+            else existingIngredients.forEach(ing => addIngredientRow(ing.ingredient_id, ing.quantity_required));
+            document.getElementById('ingredients-modal').classList.remove('hidden');
+        }
+
+        function addIngredientRow(selectedIngId = '', quantity = 1) {
+            const container = document.getElementById('ingredients-form-container');
+            let options = '<option value="">-- اختر الخامة --</option>';
+            products.filter(p => !p.is_drink).forEach(p => {
+                let sel = p.id === selectedIngId ? 'selected' : '';
+                options += `<option value="${p.id}" ${sel}>${p.name} (المخزون: ${p.stock_quantity})</option>`;
+            });
+            const row = document.createElement('div');
+            row.className = 'ing-row';
+            row.style.cssText = 'display: flex; gap: 10px; margin-bottom: 10px; align-items: center;';
+            row.innerHTML = `
+                <select class="ing-select" style="flex:2; padding:8px; background:#0f172a; border:1px solid var(--border-color); color:white; border-radius:6px;">${options}</select>
+                <input type="number" step="0.1" value="${quantity}" placeholder="الكمية" class="ing-qty" style="flex:1; padding:8px; background:#0f172a; border:1px solid var(--border-color); color:white; border-radius:6px;">
+                <button onclick="this.parentElement.remove()" style="background:var(--accent-red); color:white; border:none; padding:8px 12px; border-radius:6px; cursor:pointer;">×</button>`;
+            container.appendChild(row);
+        }
+
+        async function saveProductIngredients() {
+            const rows = document.querySelectorAll('.ing-row');
+            const ingredients = [];
+            rows.forEach(r => {
+                const ingId = r.querySelector('.ing-select').value;
+                const qty = parseFloat(r.querySelector('.ing-qty').value);
+                if (ingId && qty > 0) ingredients.push({ ingredient_id: parseInt(ingId), quantity_required: qty });
+            });
+            await fetch('/api/product-ingredients', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ parent_product_id: currentEditingParentId, ingredients })
+            });
+            alert('تم حفظ مكونات الصنف بنجاح!');
+            closeIngredientsModal();
+        }
+
+        function closeIngredientsModal() { document.getElementById('ingredients-modal').classList.add('hidden'); }
+
+        async function openAdminVariantsModal(productId, productName) {
+            currentEditingVariantProductId = productId;
+            document.getElementById('admin-var-modal-title').innerText = `⚙️ أحجام وخيارات (${productName})`;
+            const res = await fetch(`/api/product-variants/${productId}`);
+            const variants = await res.json();
+            const container = document.getElementById('admin-variants-form-container');
+            container.innerHTML = '';
+            if (variants.length === 0) {
+                addVariantRow('كبير', 10, 5);
+                addVariantRow('صغير', 0, 0);
+            } else variants.forEach(v => addVariantRow(v.variant_name, v.price_modifier, v.cost_modifier));
+            document.getElementById('admin-variants-modal').classList.remove('hidden');
+        }
+
+        function addVariantRow(name = '', priceMod = 0, costMod = 0) {
+            const container = document.getElementById('admin-variants-form-container');
+            const row = document.createElement('div');
+            row.className = 'variant-row';
+            row.style.cssText = 'display: flex; gap: 10px; margin-bottom: 10px; align-items: center;';
+            row.innerHTML = `
+                <input type="text" value="${name}" placeholder="اسم الخيار" class="var-name" style="flex:2; padding:8px; background:#0f172a; border:1px solid var(--border-color); color:white; border-radius:6px;">
+                <input type="number" step="0.5" value="${priceMod}" placeholder="+ فرق البيع" class="var-price" style="flex:1; padding:8px; background:#0f172a; border:1px solid var(--border-color); color:white; border-radius:6px;">
+                <input type="number" step="0.5" value="${costMod}" placeholder="+ فرق التكلفة" class="var-cost" style="flex:1; padding:8px; background:#0f172a; border:1px solid var(--border-color); color:white; border-radius:6px;">
+                <button onclick="this.parentElement.remove()" style="background:var(--accent-red); color:white; border:none; padding:8px 12px; border-radius:6px; cursor:pointer;">×</button>`;
+            container.appendChild(row);
+        }
+
+        async function saveProductVariants() {
+            const rows = document.querySelectorAll('.variant-row');
+            const variants = [];
+            rows.forEach(r => {
+                const name = r.querySelector('.var-name').value.trim();
+                const priceMod = parseFloat(r.querySelector('.var-price').value) || 0;
+                const costMod = parseFloat(r.querySelector('.var-cost').value) || 0;
+                if (name) variants.push({ variant_name: name, price_modifier: priceMod, cost_modifier: costMod });
+            });
+            await fetch('/api/product-variants', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ product_id: currentEditingVariantProductId, variants })
+            });
+            alert('تم حفظ الخيارات بنجاح!');
+            closeAdminVariantsModal();
+            loadAdminDashboard();
+        }
+
+        function closeAdminVariantsModal() { document.getElementById('admin-variants-modal').classList.add('hidden'); }
+
+        function toggleAccordion(id, event) {
+            event.stopPropagation();
+            document.getElementById(id).classList.toggle('active');
+        }
+
+        async function openLiveShiftModal(shiftId, username) {
+            document.getElementById('modal-title').innerText = `🔴 تفاصيل المبيعات الحية - شيفت #${shiftId} (${username})`;
+            const res = await fetch(`/api/admin/shift-live-details/${shiftId}`);
+            const sales = await res.json();
+
+            const body = document.getElementById('live-details-body');
+            body.innerHTML = '';
+            if (sales.length === 0) body.innerHTML = '<tr><td colspan="5" style="color:var(--text-muted);">لا توجد مبيعات.</td></tr>';
+            else {
+                sales.forEach(item => {
+                    body.innerHTML += `
+                        <tr>
+                            <td><b>${item.name}</b> <small style="color:var(--text-muted);">(${item.category})</small></td>
+                            <td>${item.quantity}</td>
+                            <td>${item.unit_price} ج.م</td>
+                            <td><b style="color:var(--accent-gold);">${item.subtotal} ج.م</b></td>
+                            <td>${new Date(item.created_at).toLocaleTimeString('ar-EG')}</td>
+                        </tr>`;
+                });
+            }
+            document.getElementById('live-modal').classList.remove('hidden');
+        }
+
+        function closeLiveModal() { document.getElementById('live-modal').classList.add('hidden'); }
+
+        async function forceCloseShift(shiftId) {
+            if (confirm('تأكيد إغلاق الشيفت طوارئ؟')) {
+                await fetch('/api/admin/force-close-shift', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ shift_id: shiftId })
+                });
+                loadAdminDashboard();
+            }
+        }
+
+        async function saveProduct(e) {
+            e.preventDefault();
+            const product = {
+                id: document.getElementById('prod-id').value || null,
+                name: document.getElementById('prod-name').value,
+                category: document.getElementById('prod-category').value,
+                cost_price: parseFloat(document.getElementById('prod-cost').value),
+                selling_price: parseFloat(document.getElementById('prod-price').value),
+                stock_quantity: parseInt(document.getElementById('prod-stock').value) || 0,
+                is_drink: document.getElementById('prod-is-drink').checked
+            };
+
+            await fetch('/api/products', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(product)
+            });
+
+            document.getElementById('product-form').reset();
+            document.getElementById('prod-id').value = '';
+            loadAdminDashboard();
+        }
+
+        function editProduct(p) {
+            document.getElementById('prod-id').value = p.id;
+            document.getElementById('prod-name').value = p.name;
+            document.getElementById('prod-category').value = p.category;
+            document.getElementById('prod-cost').value = p.cost_price;
+            document.getElementById('prod-price').value = p.selling_price;
+            document.getElementById('prod-stock').value = p.stock_quantity;
+            document.getElementById('prod-is-drink').checked = p.is_drink === 1;
+        }
+
+        function logout() { location.reload(); }
+    </script>
+</body>
+</html>
 const express = require('express');
-const { Pool } = require('pg');
-const path = require('path'); // ✅ التعديل الصحيح
+const sqlite3 = require('sqlite3').verbose();
+const path = require('path');
+
 const app = express();
-const PORT = process.env.PORT || 3000;
-
 app.use(express.json());
-app.use(express.static(path.join(__dirname, 'public')));
+app.use(express.static('public'));
 
-app.get('/', (req, res) => {
-    res.sendFile(path.join(__dirname, 'public', 'index.html'));
+const db = new sqlite3.Database('./cafe.db', (err) => {
+    if (err) console.error('خطأ في الاتصال بقاعدة البيانات:', err);
+    else console.log('تم الاتصال بقاعدة البيانات بنجاح.');
 });
 
-// الاتصال بقاعدة بيانات PostgreSQL عبر DATABASE_URL أو الاتصال المحلي للتطوير
-const pool = new Pool({
-    connectionString: process.env.DATABASE_URL || 'postgres://postgres:postgres@localhost:5432/hawasb_db',
-    ssl: process.env.DATABASE_URL ? { rejectUnauthorized: false } : false
+// إنشاء الجداول
+db.serialize(() => {
+    db.run(`CREATE TABLE IF NOT EXISTS users (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        username TEXT UNIQUE,
+        pin TEXT,
+        role TEXT
+    )`);
+
+    db.run(`CREATE TABLE IF NOT EXISTS products (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        name TEXT,
+        category TEXT,
+        cost_price REAL,
+        selling_price REAL,
+        stock_quantity INTEGER DEFAULT 0,
+        is_drink INTEGER DEFAULT 0
+    )`);
+
+    db.run(`CREATE TABLE IF NOT EXISTS product_ingredients (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        parent_product_id INTEGER,
+        ingredient_id INTEGER,
+        quantity_required REAL,
+        FOREIGN KEY(parent_product_id) REFERENCES products(id),
+        FOREIGN KEY(ingredient_id) REFERENCES products(id)
+    )`);
+
+    db.run(`CREATE TABLE IF NOT EXISTS product_variants (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        product_id INTEGER,
+        variant_name TEXT,
+        price_modifier REAL DEFAULT 0,
+        cost_modifier REAL DEFAULT 0,
+        FOREIGN KEY(product_id) REFERENCES products(id)
+    )`);
+
+    db.run(`CREATE TABLE IF NOT EXISTS shifts (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        user_id INTEGER,
+        start_time DATETIME,
+        end_time DATETIME,
+        status TEXT,
+        shift_date TEXT,
+        notes TEXT
+    )`);
+
+    db.run(`CREATE TABLE IF NOT EXISTS sales (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        shift_id INTEGER,
+        product_id INTEGER,
+        quantity INTEGER,
+        unit_price REAL,
+        unit_cost REAL,
+        is_staff_order INTEGER DEFAULT 0,
+        tip_amount REAL DEFAULT 0,
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+    )`);
+
+    db.run(`INSERT OR IGNORE INTO users (id, username, pin, role) VALUES 
+        (1, 'admin', '1234', 'admin'),
+        (2, 'cashier', '1111', 'cashier')`);
 });
-
-// دالة تهيئة وإنشاء الجداول تلقائياً
-async function initDB() {
-    try {
-        await pool.query(`
-            CREATE TABLE IF NOT EXISTS users (
-                id SERIAL PRIMARY KEY,
-                username VARCHAR(100) UNIQUE NOT NULL,
-                pin VARCHAR(50) NOT NULL,
-                role VARCHAR(20) NOT NULL
-            );
-
-            CREATE TABLE IF NOT EXISTS products (
-                id SERIAL PRIMARY KEY,
-                name VARCHAR(150) NOT NULL,
-                category VARCHAR(100) NOT NULL,
-                cost_price NUMERIC(10,2) DEFAULT 0,
-                selling_price NUMERIC(10,2) DEFAULT 0,
-                stock_quantity INTEGER DEFAULT 0,
-                is_drink INTEGER DEFAULT 0
-            );
-
-            CREATE TABLE IF NOT EXISTS product_ingredients (
-                id SERIAL PRIMARY KEY,
-                parent_product_id INTEGER REFERENCES products(id) ON DELETE CASCADE,
-                ingredient_id INTEGER REFERENCES products(id) ON DELETE CASCADE,
-                quantity_required NUMERIC(10,2) DEFAULT 1
-            );
-
-            CREATE TABLE IF NOT EXISTS product_variants (
-                id SERIAL PRIMARY KEY,
-                product_id INTEGER REFERENCES products(id) ON DELETE CASCADE,
-                variant_name VARCHAR(100) NOT NULL,
-                price_modifier NUMERIC(10,2) DEFAULT 0,
-                cost_modifier NUMERIC(10,2) DEFAULT 0
-            );
-
-            CREATE TABLE IF NOT EXISTS shifts (
-                id SERIAL PRIMARY KEY,
-                user_id INTEGER REFERENCES users(id),
-                start_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                end_time TIMESTAMP,
-                status VARCHAR(20) DEFAULT 'open',
-                shift_date VARCHAR(20),
-                notes TEXT
-            );
-
-            CREATE TABLE IF NOT EXISTS sales (
-                id SERIAL PRIMARY KEY,
-                shift_id INTEGER REFERENCES shifts(id),
-                product_id INTEGER REFERENCES products(id),
-                quantity INTEGER DEFAULT 1,
-                unit_price NUMERIC(10,2) DEFAULT 0,
-                unit_cost NUMERIC(10,2) DEFAULT 0,
-                is_staff_order INTEGER DEFAULT 0,
-                tip_amount NUMERIC(10,2) DEFAULT 0,
-                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-            );
-
-            INSERT INTO users (id, username, pin, role) 
-            VALUES (1, 'admin', '1234', 'admin'), (2, 'cashier', '1111', 'cashier')
-            ON CONFLICT (username) DO NOTHING;
-        `);
-        console.log('تمت تهيئة قاعدة بيانات PostgreSQL بنجاح.');
-    } catch (err) {
-        console.error('خطأ في تهيئة قاعدة البيانات:', err);
-    }
-}
-
-initDB();
 
 // 1. تسجيل الدخول
-app.post('/api/login', async (req, res) => {
+app.post('/api/login', (req, res) => {
     const { username, pin } = req.body;
-    try {
-        const userRes = await pool.query('SELECT * FROM users WHERE username = $1 AND pin = $2', [username, pin]);
-        const user = userRes.rows[0];
-
-        if (!user) return res.status(401).json({ message: 'بيانات غير صحيحة' });
+    db.get(`SELECT * FROM users WHERE username = ? AND pin = ?`, [username, pin], (err, user) => {
+        if (err || !user) return res.status(401).json({ message: 'بيانات غير صحيحة' });
 
         if (user.role === 'cashier') {
-            const shiftRes = await pool.query("SELECT * FROM shifts WHERE user_id = $1 AND status = 'open'", [user.id]);
-            res.json({ user, activeShift: shiftRes.rows[0] || null });
+            db.get(`SELECT * FROM shifts WHERE user_id = ? AND status = 'open'`, [user.id], (err, activeShift) => {
+                res.json({ user, activeShift: activeShift || null });
+            });
         } else {
             res.json({ user, activeShift: null });
         }
-    } catch (err) {
-        res.status(500).json({ error: err.message });
-    }
+    });
 });
 
-// 2. إدارة المستخدمين
-app.get('/api/admin/users', async (req, res) => {
-    try {
-        const rows = await pool.query('SELECT id, username, role FROM users ORDER BY id ASC');
-        res.json(rows.rows);
-    } catch (err) {
-        res.status(500).json({ error: err.message });
-    }
-});
-
-app.post('/api/admin/users', async (req, res) => {
-    const { id, username, pin, role } = req.body;
-    try {
-        if (id) {
-            if (pin && pin.trim() !== '') {
-                await pool.query('UPDATE users SET username=$1, role=$2, pin=$3 WHERE id=$4', [username, role, pin, id]);
-            } else {
-                await pool.query('UPDATE users SET username=$1, role=$2 WHERE id=$3', [username, role, id]);
-            }
-            res.json({ message: 'تم تحديث المستخدم بنجاح' });
-        } else {
-            const insertRes = await pool.query('INSERT INTO users (username, pin, role) VALUES ($1, $2, $3) RETURNING id', [username, pin, role]);
-            res.json({ id: insertRes.rows[0].id });
-        }
-    } catch (err) {
-        res.status(500).json({ error: err.message });
-    }
-});
-
-app.delete('/api/admin/users/:id', async (req, res) => {
-    try {
-        await pool.query('DELETE FROM users WHERE id = $1', [req.params.id]);
-        res.json({ message: 'تم حذف المستخدم بنجاح' });
-    } catch (err) {
-        res.status(500).json({ error: err.message });
-    }
-});
-
-// 3. بدء شيفت جديد
-app.post('/api/start-shift', async (req, res) => {
+// 2. بدء شيفت جديد
+app.post('/api/start-shift', (req, res) => {
     const { user_id } = req.body;
-    const shiftDate = new Date().toISOString().split('T')[0];
+    const now = new Date();
+    const shiftDate = now.toISOString().split('T')[0];
 
-    try {
-        const result = await pool.query(
-            "INSERT INTO shifts (user_id, start_time, status, shift_date) VALUES ($1, NOW(), 'open', $2) RETURNING id",
-            [user_id, shiftDate]
-        );
-        res.json({ shift_id: result.rows[0].id });
-    } catch (err) {
-        res.status(500).json({ error: err.message });
-    }
+    db.run(`INSERT INTO shifts (user_id, start_time, status, shift_date) VALUES (?, datetime('now', 'localtime'), 'open', ?)`,
+        [user_id, shiftDate], function(err) {
+            if (err) return res.status(500).json({ error: err.message });
+            res.json({ shift_id: this.lastID });
+        });
 });
 
-// 4. جلب الأصناف
-app.get('/api/products', async (req, res) => {
-    try {
-        const rows = await pool.query('SELECT * FROM products ORDER BY id ASC');
-        res.json(rows.rows);
-    } catch (err) {
-        res.status(500).json({ error: err.message });
-    }
+// 3. جلب الأصناف
+app.get('/api/products', (req, res) => {
+    db.all(`SELECT * FROM products`, [], (err, rows) => {
+        if (err) return res.status(500).json({ error: err.message });
+        res.json(rows);
+    });
 });
 
-// 5. حفظ أو تعديل صنف
-app.post('/api/products', async (req, res) => {
+// 4. حفظ أو تعديل صنف
+app.post('/api/products', (req, res) => {
     const { id, name, category, cost_price, selling_price, stock_quantity, is_drink } = req.body;
 
-    try {
-        if (id) {
-            await pool.query(
-                'UPDATE products SET name=$1, category=$2, cost_price=$3, selling_price=$4, stock_quantity=$5, is_drink=$6 WHERE id=$7',
-                [name, category, cost_price, selling_price, stock_quantity, is_drink ? 1 : 0, id]
-            );
-            res.json({ message: 'تم التحديث' });
-        } else {
-            const result = await pool.query(
-                'INSERT INTO products (name, category, cost_price, selling_price, stock_quantity, is_drink) VALUES ($1, $2, $3, $4, $5, $6) RETURNING id',
-                [name, category, cost_price, selling_price, stock_quantity, is_drink ? 1 : 0]
-            );
-            res.json({ id: result.rows[0].id });
-        }
-    } catch (err) {
-        res.status(500).json({ error: err.message });
+    if (id) {
+        db.run(`UPDATE products SET name=?, category=?, cost_price=?, selling_price=?, stock_quantity=?, is_drink=? WHERE id=?`,
+            [name, category, cost_price, selling_price, stock_quantity, is_drink ? 1 : 0, id], err => {
+                if (err) return res.status(500).json({ error: err.message });
+                res.json({ message: 'تم التحديث' });
+            });
+    } else {
+        db.run(`INSERT INTO products (name, category, cost_price, selling_price, stock_quantity, is_drink) VALUES (?, ?, ?, ?, ?, ?)`,
+            [name, category, cost_price, selling_price, stock_quantity, is_drink ? 1 : 0], function(err) {
+                if (err) return res.status(500).json({ error: err.message });
+                res.json({ id: this.lastID });
+            });
     }
 });
 
-// 6. حذف صنف
-app.delete('/api/products/:id', async (req, res) => {
-    try {
-        await pool.query('DELETE FROM products WHERE id = $1', [req.params.id]);
-        res.json({ message: 'تم حذف المنتج بنجاح' });
-    } catch (err) {
-        res.status(500).json({ error: err.message });
-    }
+// 5. حذف صنف
+app.delete('/api/products/:id', (req, res) => {
+    const productId = req.params.id;
+    db.run(`DELETE FROM product_ingredients WHERE parent_product_id = ? OR ingredient_id = ?`, [productId, productId], (err) => {
+        if (err) return res.status(500).json({ error: err.message });
+        db.run(`DELETE FROM product_variants WHERE product_id = ?`, [productId], (err) => {
+            if (err) return res.status(500).json({ error: err.message });
+            db.run(`DELETE FROM products WHERE id = ?`, [productId], (err) => {
+                if (err) return res.status(500).json({ error: err.message });
+                res.json({ message: 'تم حذف المنتج بنجاح' });
+            });
+        });
+    });
 });
 
-// 7. ربط المكونات
-app.post('/api/product-ingredients', async (req, res) => {
+// 6. ربط المكونات
+app.post('/api/product-ingredients', (req, res) => {
     const { parent_product_id, ingredients } = req.body;
-    try {
-        await pool.query('DELETE FROM product_ingredients WHERE parent_product_id = $1', [parent_product_id]);
-        for (let item of ingredients) {
-            await pool.query(
-                'INSERT INTO product_ingredients (parent_product_id, ingredient_id, quantity_required) VALUES ($1, $2, $3)',
-                [parent_product_id, item.ingredient_id, item.quantity_required]
-            );
-        }
+    db.run(`DELETE FROM product_ingredients WHERE parent_product_id = ?`, [parent_product_id], (err) => {
+        if (err) return res.status(500).json({ error: err.message });
+        const stmt = db.prepare(`INSERT INTO product_ingredients (parent_product_id, ingredient_id, quantity_required) VALUES (?, ?, ?)`);
+        ingredients.forEach(item => {
+            stmt.run(parent_product_id, item.ingredient_id, item.quantity_required);
+        });
+        stmt.finalize();
         res.json({ message: 'تم ربط المكونات بنجاح' });
-    } catch (err) {
-        res.status(500).json({ error: err.message });
-    }
+    });
 });
 
-app.get('/api/product-ingredients/:id', async (req, res) => {
-    try {
-        const rows = await pool.query(
-            'SELECT pi.*, p.name FROM product_ingredients pi JOIN products p ON pi.ingredient_id = p.id WHERE pi.parent_product_id = $1',
-            [req.params.id]
-        );
-        res.json(rows.rows);
-    } catch (err) {
-        res.status(500).json({ error: err.message });
-    }
+app.get('/api/product-ingredients/:id', (req, res) => {
+    db.all(`SELECT pi.*, p.name FROM product_ingredients pi JOIN products p ON pi.ingredient_id = p.id WHERE pi.parent_product_id = ?`, 
+    [req.params.id], (err, rows) => {
+        if (err) return res.status(500).json({ error: err.message });
+        res.json(rows);
+    });
 });
 
-// 8. الأحجام والخيارات
-app.post('/api/product-variants', async (req, res) => {
+// 7. الأحجام والخيارات
+app.post('/api/product-variants', (req, res) => {
     const { product_id, variants } = req.body;
-    try {
-        await pool.query('DELETE FROM product_variants WHERE product_id = $1', [product_id]);
-        for (let v of variants) {
-            await pool.query(
-                'INSERT INTO product_variants (product_id, variant_name, price_modifier, cost_modifier) VALUES ($1, $2, $3, $4)',
-                [product_id, v.variant_name, v.price_modifier, v.cost_modifier]
-            );
-        }
+    db.run(`DELETE FROM product_variants WHERE product_id = ?`, [product_id], (err) => {
+        if (err) return res.status(500).json({ error: err.message });
+        const stmt = db.prepare(`INSERT INTO product_variants (product_id, variant_name, price_modifier, cost_modifier) VALUES (?, ?, ?, ?)`);
+        variants.forEach(v => {
+            stmt.run(product_id, v.variant_name, v.price_modifier, v.cost_modifier);
+        });
+        stmt.finalize();
         res.json({ message: 'تم حفظ الخيارات بنجاح' });
-    } catch (err) {
-        res.status(500).json({ error: err.message });
-    }
+    });
 });
 
-app.get('/api/product-variants/:id', async (req, res) => {
-    try {
-        const rows = await pool.query('SELECT * FROM product_variants WHERE product_id = $1', [req.params.id]);
-        res.json(rows.rows);
-    } catch (err) {
-        res.status(500).json({ error: err.message });
-    }
+app.get('/api/product-variants/:id', (req, res) => {
+    db.all(`SELECT * FROM product_variants WHERE product_id = ?`, [req.params.id], (err, rows) => {
+        if (err) return res.status(500).json({ error: err.message });
+        res.json(rows);
+    });
 });
 
-// 9. إتمام البيع
-app.post('/api/checkout', async (req, res) => {
+// 8. إتمام البيع
+app.post('/api/checkout', (req, res) => {
     const { shift_id, cart, is_staff_order, paid_amount } = req.body;
 
     let totalCartPrice = cart.reduce((sum, item) => sum + (item.price * item.qty), 0);
     let calculatedTip = (paid_amount > totalCartPrice && totalCartPrice > 0) ? (paid_amount - totalCartPrice) : 0;
 
-    try {
-        for (let item of cart) {
+    db.serialize(() => {
+        cart.forEach(item => {
             let finalPrice = is_staff_order ? item.cost : item.price;
 
-            await pool.query(
-                'INSERT INTO sales (shift_id, product_id, quantity, unit_price, unit_cost, is_staff_order, tip_amount) VALUES ($1, $2, $3, $4, $5, $6, $7)',
-                [shift_id, item.id, item.qty, finalPrice, item.cost, is_staff_order ? 1 : 0, calculatedTip]
-            );
+            db.run(`INSERT INTO sales (shift_id, product_id, quantity, unit_price, unit_cost, is_staff_order, tip_amount) 
+                    VALUES (?, ?, ?, ?, ?, ?, ?)`,
+                [shift_id, item.id, item.qty, finalPrice, item.cost, is_staff_order ? 1 : 0, calculatedTip]);
 
-            const ingredientsRes = await pool.query('SELECT * FROM product_ingredients WHERE parent_product_id = $1', [item.id]);
-            const ingredients = ingredientsRes.rows;
-
-            if (ingredients && ingredients.length > 0) {
-                for (let ing of ingredients) {
-                    await pool.query('UPDATE products SET stock_quantity = stock_quantity - $1 WHERE id = $2 AND is_drink = 0',
-                        [ing.quantity_required * item.qty, ing.ingredient_id]);
+            db.all(`SELECT * FROM product_ingredients WHERE parent_product_id = ?`, [item.id], (err, ingredients) => {
+                if (!err && ingredients && ingredients.length > 0) {
+                    ingredients.forEach(ing => {
+                        db.run(`UPDATE products SET stock_quantity = stock_quantity - ? WHERE id = ? AND is_drink = 0`, 
+                            [ing.quantity_required * item.qty, ing.ingredient_id]);
+                    });
+                } else {
+                    db.run(`UPDATE products SET stock_quantity = stock_quantity - ? WHERE id = ? AND is_drink = 0`, 
+                        [item.qty, item.id]);
                 }
-            } else {
-                await pool.query('UPDATE products SET stock_quantity = stock_quantity - $1 WHERE id = $2 AND is_drink = 0',
-                    [item.qty, item.id]);
-            }
+            });
             calculatedTip = 0;
-        }
-
-        res.json({ success: true, tip: paid_amount > totalCartPrice ? paid_amount - totalCartPrice : 0 });
-    } catch (err) {
-        res.status(500).json({ error: err.message });
-    }
-});
-
-// 10. ملخص الشيفت المباشر
-app.get('/api/shift-summary/:shift_id', async (req, res) => {
-    try {
-        const row = await pool.query(`
-            SELECT 
-                COALESCE(SUM(quantity * unit_price), 0) as total_sales,
-                COALESCE(SUM(quantity * (unit_price - unit_cost)), 0) as total_profit,
-                COALESCE(SUM(tip_amount), 0) as total_tips
-            FROM sales WHERE shift_id = $1
-        `, [req.params.shift_id]);
-        res.json(row.rows[0]);
-    } catch (err) {
-        res.status(500).json({ error: err.message });
-    }
-});
-
-// 11. إغلاق الشيفت
-app.post('/api/end-shift', async (req, res) => {
-    const { shift_id, notes } = req.body;
-    try {
-        await pool.query("UPDATE shifts SET end_time = NOW(), status = 'closed', notes = $1 WHERE id = $2", [notes, shift_id]);
-        res.json({ message: 'تم إغلاق الشيفت' });
-    } catch (err) {
-        res.status(500).json({ error: err.message });
-    }
-});
-
-// 12. تفاصيل مبيعات الشيفت
-app.get('/api/admin/shift-live-details/:shift_id', async (req, res) => {
-    try {
-        const rows = await pool.query(`
-            SELECT p.name, p.category, s.quantity, s.unit_price, (s.quantity * s.unit_price) as subtotal, s.created_at 
-            FROM sales s 
-            JOIN products p ON s.product_id = p.id 
-            WHERE s.shift_id = $1 ORDER BY s.created_at DESC
-        `, [req.params.shift_id]);
-        res.json(rows.rows);
-    } catch (err) {
-        res.status(500).json({ error: err.message });
-    }
-});
-
-// 13. لوحة الأدمن
-app.get('/api/admin/dashboard', async (req, res) => {
-    try {
-        const shifts = await pool.query(`
-            SELECT 
-                s.id, s.start_time, s.end_time, s.status, s.shift_date, s.notes, u.username,
-                COALESCE(SUM(sa.quantity * sa.unit_price), 0) as total_sales,
-                COALESCE(SUM(sa.quantity * (sa.unit_price - sa.unit_cost)), 0) as total_profit,
-                COALESCE(SUM(sa.tip_amount), 0) as total_tips
-            FROM shifts s
-            JOIN users u ON s.user_id = u.id
-            LEFT JOIN sales sa ON s.id = sa.shift_id
-            GROUP BY s.id, u.username ORDER BY s.id DESC
-        `);
-
-        const stockCollected = await pool.query('SELECT COALESCE(SUM(quantity * unit_cost), 0) as collected_stock_cost FROM sales');
-        const stockRemaining = await pool.query('SELECT COALESCE(SUM(stock_quantity * cost_price), 0) as remaining_stock_cost FROM products WHERE is_drink = 0');
-        const products = await pool.query('SELECT * FROM products ORDER BY id ASC');
-
-        res.json({
-            shifts: shifts.rows,
-            stats: {
-                collected_stock_cost: stockCollected.rows[0].collected_stock_cost,
-                remaining_stock_cost: stockRemaining.rows[0].remaining_stock_cost
-            },
-            products: products.rows
         });
-    } catch (err) {
-        res.status(500).json({ error: err.message });
-    }
+        res.json({ success: true, tip: paid_amount > totalCartPrice ? paid_amount - totalCartPrice : 0 });
+    });
 });
 
-app.post('/api/admin/force-close-shift', async (req, res) => {
-    try {
-        await pool.query("UPDATE shifts SET end_time = NOW(), status = 'closed', notes = 'إغلاق إجباري بواسطة المسؤول' WHERE id = $1", [req.body.shift_id]);
-        res.json({ message: 'تم الإغلاق' });
-    } catch (err) {
-        res.status(500).json({ error: err.message });
-    }
+// 9. ملخص الشيفت المباشر
+app.get('/api/shift-summary/:shift_id', (req, res) => {
+    const shiftId = req.params.shift_id;
+    db.get(`
+        SELECT 
+            COALESCE(SUM(quantity * unit_price), 0) as total_sales,
+            COALESCE(SUM(quantity * (unit_price - unit_cost)), 0) as total_profit,
+            COALESCE(SUM(tip_amount), 0) as total_tips
+        FROM sales WHERE shift_id = ?
+    `, [shiftId], (err, row) => {
+        if (err) return res.status(500).json({ error: err.message });
+        res.json(row);
+    });
 });
 
-app.listen(PORT, () => console.log(`🚀 شغال على البورت ${PORT} باستخدام PostgreSQL - حواسب كافيه ❤️`));
+// 10. إغلاق الشيفت
+app.post('/api/end-shift', (req, res) => {
+    const { shift_id, notes } = req.body;
+    db.run(`UPDATE shifts SET end_time = datetime('now', 'localtime'), status = 'closed', notes = ? WHERE id = ?`,
+        [notes, shift_id], (err) => {
+            if (err) return res.status(500).json({ error: err.message });
+            res.json({ message: 'تم إغلاق الشيفت' });
+        });
+});
+
+// 11. تفاصيل مبيعات الشيفت
+app.get('/api/admin/shift-live-details/:shift_id', (req, res) => {
+    db.all(`
+        SELECT p.name, p.category, s.quantity, s.unit_price, (s.quantity * s.unit_price) as subtotal, s.created_at 
+        FROM sales s 
+        JOIN products p ON s.product_id = p.id 
+        WHERE s.shift_id = ? ORDER BY s.created_at DESC
+    `, [req.params.shift_id], (err, rows) => {
+        if (err) return res.status(500).json({ error: err.message });
+        res.json(rows);
+    });
+});
+
+// 12. لوحة الأدمن
+app.get('/api/admin/dashboard', (req, res) => {
+    db.all(`
+        SELECT 
+            s.id, s.start_time, s.end_time, s.status, s.shift_date, s.notes, u.username,
+            COALESCE(SUM(sa.quantity * sa.unit_price), 0) as total_sales,
+            COALESCE(SUM(sa.quantity * (sa.unit_price - sa.unit_cost)), 0) as total_profit,
+            COALESCE(SUM(sa.tip_amount), 0) as total_tips
+        FROM shifts s
+        JOIN users u ON s.user_id = u.id
+        LEFT JOIN sales sa ON s.id = sa.shift_id
+        GROUP BY s.id ORDER BY s.id DESC
+    `, [], (err, shifts) => {
+        db.get(`
+            SELECT 
+                COALESCE(SUM(quantity * unit_cost), 0) as collected_stock_cost 
+            FROM sales
+        `, [], (err, stockCollected) => {
+            db.get(`
+                SELECT 
+                    COALESCE(SUM(stock_quantity * cost_price), 0) as remaining_stock_cost 
+                FROM products WHERE is_drink = 0
+            `, [], (err, stockRemaining) => {
+                db.all(`SELECT * FROM products`, [], (err, products) => {
+                    res.json({
+                        shifts,
+                        stats: {
+                            collected_stock_cost: stockCollected ? stockCollected.collected_stock_cost : 0,
+                            remaining_stock_cost: stockRemaining ? stockRemaining.remaining_stock_cost : 0
+                        },
+                        products
+                    });
+                });
+            });
+        });
+    });
+});
+
+app.post('/api/admin/force-close-shift', (req, res) => {
+    db.run(`UPDATE shifts SET end_time = datetime('now', 'localtime'), status = 'closed', notes = 'إغلاق إجباري بواسطة المسؤول' WHERE id = ?`,
+        [req.body.shift_id], (err) => {
+            if (err) return res.status(500).json({ error: err.message });
+            res.json({ message: 'تم الإغلاق' });
+        });
+});
+
+const PORT = process.env.PORT || 3000;
+app.listen(PORT, () => console.log(`🚀 شغال على البورت ${PORT} - حواسب كافيه ❤️`));
