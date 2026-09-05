@@ -1,136 +1,237 @@
-<!-- CSS إضافي لتحسين الحقول وإظهار المسميات -->
+<!-- CSS جديد لتطبيق نظام التبويبات والبساطة -->
 <style>
-    .form-group-floating {
-        position: relative;
-        flex: 1;
-        min-width: 140px;
+    /* Admin Layout with Sidebar Navigation */
+    .admin-layout {
         display: flex;
-        flex-direction: column;
-        gap: 4px;
+        height: calc(100vh - 61px);
+        overflow: hidden;
     }
 
-    .form-group-floating label {
-        font-size: 12px;
-        color: var(--accent-primary);
+    /* Side Navigation Bar */
+    .admin-sidebar {
+        width: 240px;
+        background: var(--bg-surface);
+        border-left: 1px solid var(--border-color);
+        display: flex;
+        flex-direction: column;
+        padding: 20px 10px;
+        gap: 8px;
+    }
+
+    .admin-nav-btn {
+        background: none;
+        border: none;
+        color: var(--text-muted);
+        padding: 12px 16px;
+        border-radius: var(--radius-md);
+        cursor: pointer;
+        font-size: 14px;
         font-weight: bold;
         display: flex;
         align-items: center;
-        gap: 5px;
+        gap: 12px;
+        transition: all 0.2s ease;
+        text-align: right;
     }
 
-    .form-group-floating input, 
-    .form-group-floating select {
-        padding: 10px 12px;
+    .admin-nav-btn:hover {
+        background: rgba(255, 255, 255, 0.04);
+        color: var(--text-main);
+    }
+
+    .admin-nav-btn.active {
+        background: rgba(245, 158, 11, 0.15);
+        color: var(--accent-primary);
+        border-right: 3px solid var(--accent-primary);
+    }
+
+    /* Content Area */
+    .admin-main-content {
+        flex: 1;
+        padding: 25px;
+        overflow-y: auto;
         background: var(--bg-base);
-        border: 1px solid var(--border-color);
-        color: white;
-        border-radius: var(--radius-sm);
-        outline: none;
-        font-size: 14px;
-        transition: 0.2s;
     }
 
-    .form-group-floating input:focus, 
-    .form-group-floating select:focus {
-        border-color: var(--accent-primary);
-        box-shadow: 0 0 8px rgba(245, 158, 11, 0.2);
+    .tab-pane {
+        display: none;
     }
 
-    .checkbox-floating {
-        display: flex;
-        align-items: center;
-        gap: 8px;
-        background: var(--bg-base);
-        padding: 10px 14px;
-        border-radius: var(--radius-sm);
-        border: 1px solid var(--border-color);
-        cursor: pointer;
-        user-select: none;
+    .tab-pane.active {
+        display: block;
+        animation: fadeIn 0.25s ease-in-out;
     }
 
-    .checkbox-floating input {
-        accent-color: var(--accent-primary);
-        width: 16px;
-        height: 16px;
-        cursor: pointer;
+    @keyframes fadeIn {
+        from { opacity: 0; transform: translateY(4px); }
+        to { opacity: 1; transform: translateY(0); }
     }
 </style>
 
-<!-- نموذج إدارة الأصناف والأسعار المحدث -->
-<h3><i class="fa-solid fa-utensils"></i> إدارة الأصناف والأسعار</h3>
+<!-- Admin Screen Container -->
+<div id="admin-screen" class="pos-container hidden">
+    <div class="admin-layout" style="width: 100%;">
+        
+        <!-- Sidebar Navigation -->
+        <div class="admin-sidebar">
+            <div style="padding: 10px; margin-bottom: 15px; color: var(--accent-primary); font-weight: bold; font-size: 16px; display: flex; align-items: center; gap: 8px;">
+                <i class="fa-solid fa-sliders"></i> لوحة التحكم
+            </div>
+            
+            <button class="admin-nav-btn active" onclick="switchAdminTab('tab-overview', this)">
+                <i class="fa-solid fa-chart-pie"></i> الإحصائيات العامة
+            </button>
+            <button class="admin-nav-btn" onclick="switchAdminTab('tab-products', this)">
+                <i class="fa-solid fa-utensils"></i> الأصناف والأسعار
+            </button>
+            <button class="admin-nav-btn" onclick="switchAdminTab('tab-shifts', this)">
+                <i class="fa-solid fa-box-archive"></i> سجل الشيفتات
+            </button>
+            <button class="admin-nav-btn" onclick="switchAdminTab('tab-users', this)">
+                <i class="fa-solid fa-users"></i> الموظفين والمستخدمين
+            </button>
+        </div>
 
-<form id="product-form" onsubmit="saveProduct(event)" style="background: var(--bg-surface); padding: 20px; border-radius: var(--radius-md); border: 1px solid var(--border-color); margin: 15px 0; display: flex; gap: 15px; flex-wrap: wrap; align-items: flex-end;">
-    <input type="hidden" id="prod-id">
+        <!-- Main Workspace Pane -->
+        <div class="admin-main-content">
+            
+            <!-- 1. TAB: Overview -->
+            <div id="tab-overview" class="tab-pane active">
+                <h3 style="color: var(--text-main); margin-bottom: 20px;"><i class="fa-solid fa-chart-pie" style="color: var(--accent-primary);"></i> الإحصائيات العامة ورأس المال</h3>
+                <div class="stats-cards">
+                    <div class="stat-card">
+                        <h4 style="color: var(--text-muted);">تغطية الخامات المبيعة</h4>
+                        <p id="stat-collected-cost" style="font-size: 26px; font-weight: bold; color: var(--accent-info); margin-top: 8px;">0 ج.م</p>
+                    </div>
+                    <div class="stat-card">
+                        <h4 style="color: var(--text-muted);">رأس مال البضاعة المتبقية</h4>
+                        <p id="stat-remaining-cost" style="font-size: 26px; font-weight: bold; color: var(--accent-success); margin-top: 8px;">0 ج.م</p>
+                    </div>
+                </div>
+            </div>
 
-    <!-- اسم الصنف -->
-    <div class="form-group-floating">
-        <label for="prod-name"><i class="fa-solid fa-tag"></i> اسم الصنف</label>
-        <input type="text" id="prod-name" placeholder="مثال: إسبريسو" required>
+            <!-- 2. TAB: Products Management -->
+            <div id="tab-products" class="tab-pane">
+                <h3 style="color: var(--text-main); margin-bottom: 20px;"><i class="fa-solid fa-utensils" style="color: var(--accent-primary);"></i> إدارة الأصناف والأسعار</h3>
+                
+                <form id="product-form" onsubmit="saveProduct(event)" style="background: var(--bg-surface); padding: 20px; border-radius: var(--radius-md); border: 1px solid var(--border-color); margin-bottom: 20px; display: flex; gap: 12px; flex-wrap: wrap; align-items: flex-end;">
+                    <input type="hidden" id="prod-id">
+
+                    <div class="form-group-floating">
+                        <label for="prod-name"><i class="fa-solid fa-tag"></i> اسم الصنف</label>
+                        <input type="text" id="prod-name" placeholder="مثال: إسبريسو" required>
+                    </div>
+
+                    <div class="form-group-floating">
+                        <label for="prod-category"><i class="fa-solid fa-layer-group"></i> القسم</label>
+                        <input type="text" id="prod-category" placeholder="مثال: مشروبات ساخنة" required>
+                    </div>
+
+                    <div class="form-group-floating" style="max-width: 120px;">
+                        <label for="prod-cost"><i class="fa-solid fa-coins"></i> سعر التكلفة</label>
+                        <input type="number" step="0.5" id="prod-cost" placeholder="0.0" required>
+                    </div>
+
+                    <div class="form-group-floating" style="max-width: 120px;">
+                        <label for="prod-price"><i class="fa-solid fa-money-bill-wave"></i> سعر البيع</label>
+                        <input type="number" step="0.5" id="prod-price" placeholder="0.0" required>
+                    </div>
+
+                    <div class="form-group-floating" style="max-width: 110px;">
+                        <label for="prod-stock"><i class="fa-solid fa-cubes"></i> الكمية</label>
+                        <input type="number" step="0.1" id="prod-stock" placeholder="0" value="0">
+                    </div>
+
+                    <div class="form-group-floating" style="max-width: 120px;">
+                        <label for="prod-unit"><i class="fa-solid fa-scale-balanced"></i> الوحدة</label>
+                        <select id="prod-unit">
+                            <option value="قطعة">قطعة</option>
+                            <option value="جرام">جرام</option>
+                            <option value="كيلو">كيلو</option>
+                            <option value="مليلتر">مليلتر</option>
+                            <option value="لتر">لتر</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group-floating" style="max-width: 150px;">
+                        <label><i class="fa-solid fa-mug-hot"></i> نوع الصنف</label>
+                        <label class="checkbox-floating">
+                            <input type="checkbox" id="prod-is-drink">
+                            <span style="font-size: 13px;">مشروب / خدمة</span>
+                        </label>
+                    </div>
+
+                    <button type="submit" style="background: var(--accent-success); color: white; border: none; padding: 10px 20px; border-radius: var(--radius-sm); cursor: pointer; font-weight: bold; height: 42px;">
+                        <i class="fa-solid fa-floppy-disk"></i> حفظ الصنف
+                    </button>
+                </form>
+
+                <table>
+                    <thead>
+                        <tr><th>الصنف</th><th>القسم</th><th>التكلفة</th><th>البيع</th><th>المخزون</th><th>الوحدة</th><th>النوع</th><th>إجراءات</th></tr>
+                    </thead>
+                    <tbody id="products-table-body"></tbody>
+                </table>
+            </div>
+
+            <!-- 3. TAB: Shifts History -->
+            <div id="tab-shifts" class="tab-pane">
+                <h3 style="color: var(--text-main); margin-bottom: 20px;"><i class="fa-solid fa-box-archive" style="color: var(--accent-primary);"></i> سجل الشيفتات</h3>
+                <div id="shifts-accordion-container"></div>
+            </div>
+
+            <!-- 4. TAB: Users Management -->
+            <div id="tab-users" class="tab-pane">
+                <h3 style="color: var(--text-main); margin-bottom: 20px;"><i class="fa-solid fa-users" style="color: var(--accent-primary);"></i> إدارة حسابات الموظفين</h3>
+                
+                <form id="user-form" onsubmit="saveUser(event)" style="background: var(--bg-surface); padding: 20px; border-radius: var(--radius-md); border: 1px solid var(--border-color); margin-bottom: 20px; display: flex; gap: 15px; flex-wrap: wrap; align-items: flex-end;">
+                    <input type="hidden" id="usr-id">
+
+                    <div class="form-group-floating">
+                        <label for="usr-name"><i class="fa-solid fa-user"></i> اسم المستخدم</label>
+                        <input type="text" id="usr-name" placeholder="اسم المستخدم" required>
+                    </div>
+
+                    <div class="form-group-floating">
+                        <label for="usr-pin"><i class="fa-solid fa-key"></i> رمز الدخول (PIN)</label>
+                        <input type="password" id="usr-pin" placeholder="****">
+                    </div>
+
+                    <div class="form-group-floating">
+                        <label for="usr-role"><i class="fa-solid fa-user-shield"></i> الصلاحية</label>
+                        <select id="usr-role">
+                            <option value="cashier">كاشير (Cashier)</option>
+                            <option value="admin">مسؤول (Admin)</option>
+                        </select>
+                    </div>
+
+                    <button type="submit" style="background: var(--accent-success); color: white; border: none; padding: 10px 24px; border-radius: var(--radius-sm); cursor: pointer; font-weight: bold; height: 42px;">
+                        <i class="fa-solid fa-user-plus"></i> حفظ الحساب
+                    </button>
+                </form>
+
+                <table>
+                    <thead>
+                        <tr><th>#</th><th>اسم المستخدم</th><th>الدور</th><th>إجراءات</th></tr>
+                    </thead>
+                    <tbody id="users-table-body"></tbody>
+                </table>
+            </div>
+
+        </div>
     </div>
+</div>
 
-    <!-- القسم -->
-    <div class="form-group-floating">
-        <label for="prod-category"><i class="fa-solid fa-layer-group"></i> القسم (Category)</label>
-        <input type="text" id="prod-category" placeholder="مثال: مشروبات ساخنة" required>
-    </div>
+<!-- دالة التنقل بين التبويبات JavaScript -->
+<script>
+    function switchAdminTab(tabId, btnElement) {
+        // إخفاء كافة الأقسام
+        document.querySelectorAll('.tab-pane').forEach(pane => pane.classList.remove('active'));
+        // إزالة التحديد من أزرار القائمة الجانبية
+        document.querySelectorAll('.admin-nav-btn').forEach(btn => btn.classList.remove('active'));
 
-    <!-- سعر التكلفة -->
-    <div class="form-group-floating" style="max-width: 130px;">
-        <label for="prod-cost"><i class="fa-solid fa-coins"></i> سعر التكلفة</label>
-        <input type="number" step="0.5" id="prod-cost" placeholder="0.0" required>
-    </div>
-
-    <!-- سعر البيع -->
-    <div class="form-group-floating" style="max-width: 130px;">
-        <label for="prod-price"><i class="fa-solid fa-money-bill-wave"></i> سعر البيع</label>
-        <input type="number" step="0.5" id="prod-price" placeholder="0.0" required>
-    </div>
-
-    <!-- الكمية / المخزون -->
-    <div class="form-group-floating" style="max-width: 120px;">
-        <label for="prod-stock"><i class="fa-solid fa-cubes"></i> الكمية المتاحة</label>
-        <input type="number" step="0.1" id="prod-stock" placeholder="0" value="0">
-    </div>
-
-    <!-- وحدة القياس -->
-    <div class="form-group-floating" style="max-width: 130px;">
-        <label for="prod-unit"><i class="fa-solid fa-scale-balanced"></i> وحدة القياس</label>
-        <select id="prod-unit">
-            <option value="قطعة">قطعة</option>
-            <option value="جرام">جرام</option>
-            <option value="كيلو">كيلو</option>
-            <option value="مليلتر">مليلتر</option>
-            <option value="لتر">لتر</option>
-        </select>
-    </div>
-
-    <!-- نوع الصنف -->
-    <div class="form-group-floating" style="max-width: 160px;">
-        <label><i class="fa-solid fa-mug-hot"></i> تصنيف الصنف</label>
-        <label class="checkbox-floating">
-            <input type="checkbox" id="prod-is-drink">
-            <span style="font-size: 13px; color: var(--text-main);">مشروب / خدمة</span>
-        </label>
-    </div>
-
-    <!-- زر الحفظ -->
-    <button type="submit" style="background: var(--accent-success); color: white; border: none; padding: 12px 24px; border-radius: var(--radius-sm); cursor: pointer; font-weight: bold; display: flex; align-items: center; gap: 8px; height: 42px;">
-        <i class="fa-solid fa-floppy-disk"></i> حفظ الصنف
-    </button>
-</form>
-
-<table>
-    <thead>
-        <tr>
-            <th>الصنف</th>
-            <th>القسم</th>
-            <th>التكلفة</th>
-            <th>البيع</th>
-            <th>المخزون</th>
-            <th>الوحدة</th>
-            <th>النوع</th>
-            <th>إجراءات</th>
-        </tr>
-    </thead>
-    <tbody id="products-table-body"></tbody>
-</table>
+        // تفعيل القسم والزر المحدد
+        document.getElementById(tabId).classList.add('active');
+        btnElement.classList.add('active');
+    }
+</script>
