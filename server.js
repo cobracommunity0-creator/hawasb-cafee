@@ -14,7 +14,7 @@ const pool = new Pool({
     ssl: process.env.DATABASE_URL ? { rejectUnauthorized: false } : false
 });
 
-// إنشاء الجداول تلقائياً
+// إنشاء الجداول تلقائياً وتحديث الأعمدة
 async function initDB() {
     try {
         await pool.query(`
@@ -42,13 +42,15 @@ async function initDB() {
                 ingredient_id INT REFERENCES products(id) ON DELETE CASCADE,
                 quantity_required NUMERIC
             );
+
             CREATE TABLE IF NOT EXISTS product_variants (
                 id SERIAL PRIMARY KEY,
                 product_id INT REFERENCES products(id) ON DELETE CASCADE,
                 variant_name VARCHAR(255),
-                selling_price NUMERIC DEFAULT 0,  -- سعر بيع هذا الحجم/الخيار مباشر
-                cost_price NUMERIC DEFAULT 0      -- تكلفة هذا الحجم/الخيار مباشر
+                selling_price NUMERIC DEFAULT 0,
+                cost_price NUMERIC DEFAULT 0
             );
+            
             CREATE TABLE IF NOT EXISTS shifts (
                 id SERIAL PRIMARY KEY,
                 user_id INT REFERENCES users(id),
@@ -154,10 +156,21 @@ app.post('/api/start-shift', async (req, res) => {
     }
 });
 
-// 4. جلب الأصناف
+// 4. جلب الأصناف متضمنة التكلفة الإجمالية بناءً على المكونات
 app.get('/api/products', async (req, res) => {
     try {
-        const result = await pool.query('SELECT * FROM products ORDER BY id ASC');
+        const result = await pool.query(`
+            SELECT 
+                p.*,
+                COALESCE((
+                    SELECT SUM(pi.quantity_required * ing.cost_price)
+                    FROM product_ingredients pi
+                    JOIN products ing ON pi.ingredient_id = ing.id
+                    WHERE pi.parent_product_id = p.id
+                ), 0) + COALESCE(p.cost_price, 0) as calculated_cost
+            FROM products p 
+            ORDER BY p.id ASC
+        `);
         res.json(result.rows);
     } catch (err) {
         res.status(500).json({ error: err.message });
@@ -217,7 +230,7 @@ app.post('/api/product-ingredients', async (req, res) => {
 app.get('/api/product-ingredients/:id', async (req, res) => {
     try {
         const result = await pool.query(
-            'SELECT pi.*, p.name, p.unit_type FROM product_ingredients pi JOIN products p ON pi.ingredient_id = p.id WHERE pi.parent_product_id = $1',
+            'SELECT pi.*, p.name, p.unit_type, p.cost_price FROM product_ingredients pi JOIN products p ON pi.ingredient_id = p.id WHERE pi.parent_product_id = $1',
             [req.params.id]
         );
         res.json(result.rows);
@@ -226,8 +239,7 @@ app.get('/api/product-ingredients/:id', async (req, res) => {
     }
 });
 
-// 8. الأحجام والخيارات
-// حفظ أو تعديل الأحجام والخيارات (أسعار وتكاليف مباشرة)
+// 8. الأحجام والخيارات (سعر وتكلفة مباشرة لكل حجم)
 app.post('/api/product-variants', async (req, res) => {
     const { product_id, variants } = req.body;
     try {
@@ -244,10 +256,9 @@ app.post('/api/product-variants', async (req, res) => {
     }
 });
 
-// جلب خيارات المنتج
 app.get('/api/product-variants/:id', async (req, res) => {
     try {
-        const result = await pool.query('SELECT * FROM product_variants WHERE product_id = $1', [req.params.id]);
+        const result = await pool.query('SELECT * FROM product_variants WHERE product_id = $1 ORDER BY id ASC', [req.params.id]);
         res.json(result.rows);
     } catch (err) {
         res.status(500).json({ error: err.message });
@@ -271,14 +282,14 @@ app.post('/api/checkout', async (req, res) => {
                 [shift_id, item.id, item.qty, finalPrice, item.cost, is_staff_order ? 1 : 0, itemTip]
             );
 
+            // خصم المكونات إن وجدت، وإلا خصم المنتج نفسه
             const ingRes = await pool.query('SELECT * FROM product_ingredients WHERE parent_product_id = $1', [item.id]);
             if (ingRes.rows.length > 0) {
                 for (const ing of ingRes.rows) {
                     await pool.query('UPDATE products SET stock_quantity = stock_quantity - $1 WHERE id = $2 AND is_drink = 0', [ing.quantity_required * item.qty, ing.ingredient_id]);
                 }
-            } else {
-                await pool.query('UPDATE products SET stock_quantity = stock_quantity - $1 WHERE id = $2 AND is_drink = 0', [item.qty, item.id]);
             }
+            await pool.query('UPDATE products SET stock_quantity = stock_quantity - $1 WHERE id = $2 AND is_drink = 0', [item.qty, item.id]);
         }
         res.json({ success: true, tip: calculatedTip });
     } catch (err) {
@@ -286,12 +297,13 @@ app.post('/api/checkout', async (req, res) => {
     }
 });
 
-// 10. ملخص الشيفت المباشر
+// 10. ملخص الشيفت المباشر متضمناً تكلفة البضاعة
 app.get('/api/shift-summary/:shift_id', async (req, res) => {
     try {
         const result = await pool.query(`
             SELECT 
                 COALESCE(SUM(quantity * unit_price), 0) as total_sales,
+                COALESCE(SUM(quantity * unit_cost), 0) as total_cost,
                 COALESCE(SUM(quantity * (unit_price - unit_cost)), 0) as total_profit,
                 COALESCE(SUM(tip_amount), 0) as total_tips
             FROM sales WHERE shift_id = $1
@@ -317,7 +329,7 @@ app.post('/api/end-shift', async (req, res) => {
 app.get('/api/admin/shift-live-details/:shift_id', async (req, res) => {
     try {
         const result = await pool.query(`
-            SELECT p.name, p.category, s.quantity, s.unit_price, (s.quantity * s.unit_price) as subtotal, s.created_at 
+            SELECT p.name, p.category, s.quantity, s.unit_price, s.unit_cost, (s.quantity * s.unit_price) as subtotal, s.created_at 
             FROM sales s 
             JOIN products p ON s.product_id = p.id 
             WHERE s.shift_id = $1 ORDER BY s.created_at DESC
@@ -328,13 +340,14 @@ app.get('/api/admin/shift-live-details/:shift_id', async (req, res) => {
     }
 });
 
-// 13. لوحة تحكم المسؤول (Dashboard)
+// 13. لوحة تحكم المسؤول (Dashboard) مع حساب تكلفة البضاعة لكل شيفت
 app.get('/api/admin/dashboard', async (req, res) => {
     try {
         const shiftsRes = await pool.query(`
             SELECT 
                 s.id, s.start_time, s.end_time, s.status, s.shift_date, s.notes, u.username,
                 COALESCE(SUM(sa.quantity * sa.unit_price), 0) as total_sales,
+                COALESCE(SUM(sa.quantity * sa.unit_cost), 0) as total_cost,
                 COALESCE(SUM(sa.quantity * (sa.unit_price - sa.unit_cost)), 0) as total_profit,
                 COALESCE(SUM(sa.tip_amount), 0) as total_tips
             FROM shifts s
@@ -345,7 +358,18 @@ app.get('/api/admin/dashboard', async (req, res) => {
 
         const collectedRes = await pool.query('SELECT COALESCE(SUM(quantity * unit_cost), 0) as collected_stock_cost FROM sales');
         const remainingRes = await pool.query('SELECT COALESCE(SUM(stock_quantity * cost_price), 0) as remaining_stock_cost FROM products WHERE is_drink = 0');
-        const productsRes = await pool.query('SELECT * FROM products ORDER BY id ASC');
+        const productsRes = await pool.query(`
+            SELECT 
+                p.*,
+                COALESCE((
+                    SELECT SUM(pi.quantity_required * ing.cost_price)
+                    FROM product_ingredients pi
+                    JOIN products ing ON pi.ingredient_id = ing.id
+                    WHERE pi.parent_product_id = p.id
+                ), 0) + COALESCE(p.cost_price, 0) as calculated_cost
+            FROM products p 
+            ORDER BY p.id ASC
+        `);
 
         res.json({
             shifts: shiftsRes.rows,
@@ -370,7 +394,6 @@ app.post('/api/admin/force-close-shift', async (req, res) => {
     }
 });
 
-// توجيه جميع الطلبات الأخرى إلى index.html
 app.get('*', (req, res) => {
     res.sendFile(path.join(__dirname, 'public', 'index.html'));
 });
