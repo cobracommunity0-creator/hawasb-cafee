@@ -19,7 +19,7 @@ const db = new sqlite3.Database(dbPath, (err) => {
     else console.log('تم الاتصال بقاعدة البيانات بنجاح.');
 });
 
-// دالة أخذ نسخة احتياطية مع تدوير النسخ (احتفاظ بآخر 7 نسخ)
+// دالة أخذ نسخة احتياطية
 function backupDatabase() {
     const backupDir = path.join(__dirname, 'backups');
     if (!fs.existsSync(backupDir)) {
@@ -46,10 +46,9 @@ function backupDatabase() {
     });
 }
 
-// تشغيل النسخ الاحتياطي التلقائي كل 4 ساعات (14,400,000 مللي ثانية)
 setInterval(backupDatabase, 4 * 60 * 60 * 1000);
 
-// إنشاء وتجهيز الجداول
+// إنشاء الجداول وتغذية البيانات الافتراضية
 db.serialize(() => {
     db.run(`CREATE TABLE IF NOT EXISTS users (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -113,7 +112,6 @@ db.serialize(() => {
         created_at DATETIME DEFAULT CURRENT_TIMESTAMP
     )`);
 
-    // جدول المصروفات الجديد
     db.run(`CREATE TABLE IF NOT EXISTS expenses (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         shift_id INTEGER,
@@ -125,6 +123,19 @@ db.serialize(() => {
     db.run(`INSERT OR IGNORE INTO users (id, username, pin, role) VALUES 
         (1, 'admin', '1234', 'admin'),
         (2, 'cashier', '1111', 'cashier')`);
+
+    // التأكد من وجود منتجات افتراضية في حالة كانت الداتابيز جديدة تماماً
+    db.get("SELECT COUNT(*) as count FROM products", (err, row) => {
+        if (row && row.count === 0) {
+            const stmt = db.prepare(`INSERT INTO products (name, category, cost_price, selling_price, stock_quantity, is_drink) VALUES (?, ?, ?, ?, ?, ?)`);
+            stmt.run('شاي', 'مشروبات', 5, 15, 100, 1);
+            stmt.run('قهوة', 'مشروبات', 8, 20, 100, 1);
+            stmt.run('بيبسي', 'مشروبات', 12, 18, 50, 0);
+            stmt.run('ماء', 'مشروبات', 3, 7, 100, 0);
+            stmt.finalize();
+            console.log('تم إضافة أصناف افتراضية للجدول.');
+        }
+    });
 });
 
 // --- API Endpoints ---
@@ -201,7 +212,7 @@ app.post('/api/start-shift', (req, res) => {
 app.get('/api/products', (req, res) => {
     db.all(`SELECT * FROM products`, [], (err, rows) => {
         if (err) return res.status(500).json({ error: err.message });
-        res.json(rows);
+        res.json(rows || []);
     });
 });
 
@@ -237,7 +248,7 @@ app.delete('/api/products/:id', (req, res) => {
     });
 });
 
-// 5. المصروفات (Expenses)
+// 5. المصروفات
 app.post('/api/expenses', (req, res) => {
     const { shift_id, description, amount } = req.body;
     if (!shift_id || !amount) return res.status(400).json({ error: 'بيانات المصروف غير مكتملة' });
@@ -256,7 +267,7 @@ app.get('/api/expenses/:shift_id', (req, res) => {
     });
 });
 
-// 6. إتمام البيع آمن ومتحقق منه (Secure Checkout)
+// 6. إتمام البيع آمن ومصلح (Secure Checkout)
 app.post('/api/checkout', (req, res) => {
     const { shift_id, cart, is_staff_order, paid_amount, discount_amount = 0 } = req.body;
 
@@ -265,23 +276,21 @@ app.post('/api/checkout', (req, res) => {
     const productIds = cart.map(item => item.id);
     const placeholders = productIds.map(() => '?').join(',');
 
-    // قراءة الأسعار والمخزون الحقيقي من الداتابيز لمنع التلاعب
     db.all(`SELECT * FROM products WHERE id IN (${placeholders})`, productIds, (err, dbProducts) => {
         if (err || !dbProducts) return res.status(500).json({ error: 'خطأ في التحقق من المنتجات' });
 
         const dbProductMap = new Map(dbProducts.map(p => [p.id, p]));
 
-        // التحقق من توافر الكمية قبل العملية
+        // التحقق من توافر الكمية للمنتجات غير المشروبات
         for (const item of cart) {
             const dbProd = dbProductMap.get(item.id);
-            if (!dbProd) return res.status(400).json({ error: `المنتج رقم ${item.id} غير موجود` });
+            if (!dbProd) return res.status(400).json({ error: `المنتج غير موجود` });
 
             if (dbProd.is_drink === 0 && dbProd.stock_quantity < item.qty) {
-                return res.status(400).json({ error: `المخزون غير كافي للمنتج: ${dbProd.name}. المتبقي: ${dbProd.stock_quantity}` });
+                return res.status(400).json({ error: `المخزون غير كافي للمنتج: ${dbProd.name}` });
             }
         }
 
-        // حساب الإجمالي الحقيقي بالسيرفر
         let realTotal = 0;
         cart.forEach(item => {
             const dbProd = dbProductMap.get(item.id);
@@ -293,35 +302,28 @@ app.post('/api/checkout', (req, res) => {
         let calculatedTip = (paid_amount > realTotal && realTotal > 0) ? (paid_amount - realTotal) : 0;
 
         db.serialize(() => {
-            cart.forEach(item => {
+            const saleStmt = db.prepare(`INSERT INTO sales (shift_id, product_id, quantity, unit_price, unit_cost, discount_amount, is_staff_order, tip_amount) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`);
+            const updateStockStmt = db.prepare(`UPDATE products SET stock_quantity = stock_quantity - ? WHERE id = ? AND is_drink = 0`);
+
+            cart.forEach((item, index) => {
                 const dbProd = dbProductMap.get(item.id);
                 const finalUnitPrice = is_staff_order ? dbProd.cost_price : dbProd.selling_price;
+                const tipForThisItem = (index === 0) ? calculatedTip : 0;
 
-                db.run(`INSERT INTO sales (shift_id, product_id, quantity, unit_price, unit_cost, discount_amount, is_staff_order, tip_amount) 
-                        VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
-                    [shift_id, item.id, item.qty, finalUnitPrice, dbProd.cost_price, discount_amount, is_staff_order ? 1 : 0, calculatedTip]);
-
-                // خصم المخزون
-                db.all(`SELECT * FROM product_ingredients WHERE parent_product_id = ?`, [item.id], (err, ingredients) => {
-                    if (!err && ingredients && ingredients.length > 0) {
-                        ingredients.forEach(ing => {
-                            db.run(`UPDATE products SET stock_quantity = stock_quantity - ? WHERE id = ? AND is_drink = 0`, 
-                                [ing.quantity_required * item.qty, ing.ingredient_id]);
-                        });
-                    } else {
-                        db.run(`UPDATE products SET stock_quantity = stock_quantity - ? WHERE id = ? AND is_drink = 0`, 
-                            [item.qty, item.id]);
-                    }
-                });
-                calculatedTip = 0;
+                saleStmt.run(shift_id, item.id, item.qty, finalUnitPrice, dbProd.cost_price, discount_amount, is_staff_order ? 1 : 0, tipForThisItem);
+                updateStockStmt.run(item.qty, item.id);
             });
 
-            res.json({ success: true, tip: paid_amount > realTotal ? paid_amount - realTotal : 0 });
+            saleStmt.finalize();
+            updateStockStmt.finalize((err) => {
+                if (err) return res.status(500).json({ error: 'حدث خطأ أثناء خصم المخزون' });
+                res.json({ success: true, tip: calculatedTip });
+            });
         });
     });
 });
 
-// 7. إلغاء أوردر / مرجع (Refund Order)
+// 7. إلغاء أوردر / مرجع
 app.post('/api/sales/refund', (req, res) => {
     const { sale_id } = req.body;
 
@@ -329,23 +331,11 @@ app.post('/api/sales/refund', (req, res) => {
         if (err || !sale) return res.status(404).json({ error: 'العملية غير موجودة أو تم إلغاؤها سابقاً' });
 
         db.serialize(() => {
-            // تعليم العملية كمرتجعة
             db.run(`UPDATE sales SET is_refunded = 1 WHERE id = ?`, [sale_id]);
-
-            // إرجاع الكمية للمخزون
-            db.all(`SELECT * FROM product_ingredients WHERE parent_product_id = ?`, [sale.product_id], (err, ingredients) => {
-                if (!err && ingredients && ingredients.length > 0) {
-                    ingredients.forEach(ing => {
-                        db.run(`UPDATE products SET stock_quantity = stock_quantity + ? WHERE id = ? AND is_drink = 0`, 
-                            [ing.quantity_required * sale.quantity, ing.ingredient_id]);
-                    });
-                } else {
-                    db.run(`UPDATE products SET stock_quantity = stock_quantity + ? WHERE id = ? AND is_drink = 0`, 
-                        [sale.quantity, sale.product_id]);
-                }
+            db.run(`UPDATE products SET stock_quantity = stock_quantity + ? WHERE id = ? AND is_drink = 0`, [sale.quantity, sale.product_id], (err) => {
+                if (err) return res.status(500).json({ error: err.message });
+                res.json({ message: 'تم إرجاع العملية وإعادة الكميات للمخزون بنجاح' });
             });
-
-            res.json({ message: 'تم إرجاع العملية وإعادة الكميات للمخزون بنجاح' });
         });
     });
 });
@@ -364,10 +354,14 @@ app.get('/api/shift-summary/:shift_id', (req, res) => {
 
         db.get(`SELECT COALESCE(SUM(amount), 0) as total_expenses FROM expenses WHERE shift_id = ?`, [shiftId], (err, expRow) => {
             const expenses = expRow ? expRow.total_expenses : 0;
-            const expectedCash = (salesRow.total_sales + salesRow.total_tips) - expenses;
+            const sales = salesRow ? salesRow.total_sales : 0;
+            const tips = salesRow ? salesRow.total_tips : 0;
+            const expectedCash = (sales + tips) - expenses;
 
             res.json({
-                ...salesRow,
+                total_sales: sales,
+                total_profit: salesRow ? salesRow.total_profit : 0,
+                total_tips: tips,
                 total_expenses: expenses,
                 expected_cash: expectedCash
             });
@@ -375,11 +369,10 @@ app.get('/api/shift-summary/:shift_id', (req, res) => {
     });
 });
 
-// 9. إغلاق الشيفت وتسليم الدرج (Close Shift & Cash Reconciliation)
+// 9. إغلاق الشيفت وترحيل النقدية
 app.post('/api/end-shift', (req, res) => {
     const { shift_id, actual_cash, notes } = req.body;
 
-    // حساب الدرج المتوقع
     db.get(`
         SELECT COALESCE(SUM(quantity * unit_price - discount_amount + tip_amount), 0) as total_cash_in 
         FROM sales WHERE shift_id = ? AND is_refunded = 0
@@ -403,7 +396,7 @@ app.post('/api/end-shift', (req, res) => {
     });
 });
 
-// 10. لوحة الأدمن والتقارير
+// 10. لوحة الأدمن
 app.get('/api/admin/dashboard', (req, res) => {
     db.all(`
         SELECT 
@@ -420,12 +413,12 @@ app.get('/api/admin/dashboard', (req, res) => {
             db.get(`SELECT COALESCE(SUM(stock_quantity * cost_price), 0) as remaining_stock_cost FROM products WHERE is_drink = 0`, [], (err, stockRemaining) => {
                 db.all(`SELECT * FROM products`, [], (err, products) => {
                     res.json({
-                        shifts,
+                        shifts: shifts || [],
                         stats: {
                             collected_stock_cost: stockCollected ? stockCollected.collected_stock_cost : 0,
                             remaining_stock_cost: stockRemaining ? stockRemaining.remaining_stock_cost : 0
                         },
-                        products
+                        products: products || []
                     });
                 });
             });
