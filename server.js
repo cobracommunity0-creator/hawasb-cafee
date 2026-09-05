@@ -83,7 +83,7 @@ async function initDB() {
             ON CONFLICT (id) DO NOTHING;
         `);
 
-        // إضافة أصناف افتراضية إذا كانت الطاولة فارغة
+        // التأكد من المنتجات وإضافتها لو الجدول فاضي
         const prodCheck = await pool.query(`SELECT COUNT(*) FROM products`);
         if (parseInt(prodCheck.rows[0].count) === 0) {
             await pool.query(`
@@ -93,15 +93,14 @@ async function initDB() {
                 ('بيبسي', 'مشروبات', 12, 18, 50, 0),
                 ('ماء', 'مشروبات', 3, 7, 100, 0);
             `);
-            console.log('تم إضافة منتجات افتراضية تلقائياً.');
+            console.log('تم إضافة منتجات افتراضية بنجاح.');
         }
 
-        console.log('تم الاتصال والتأكد من جداول PostgreSQL بنجاح.');
+        console.log('تم الاتصال بقاعدة البيانات وتجهيز الجداول.');
     } catch (err) {
-        console.error('خطأ أثناء تجهيز قاعدة البيانات:', err);
+        console.error('خطأ في الاتصال بالـ Database:', err);
     }
 }
-
 initDB();
 
 // --- API Endpoints ---
