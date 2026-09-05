@@ -190,14 +190,21 @@
             <input type="text" id="prod-category" placeholder="القسم" required style="padding: 10px; background: #0f172a; border: 1px solid var(--border-color); color: white; border-radius: 6px; flex: 1;">
             <input type="number" step="0.5" id="prod-cost" placeholder="سعر التكلفة" required style="padding: 10px; background: #0f172a; border: 1px solid var(--border-color); color: white; border-radius: 6px; width: 110px;">
             <input type="number" step="0.5" id="prod-price" placeholder="سعر البيع" required style="padding: 10px; background: #0f172a; border: 1px solid var(--border-color); color: white; border-radius: 6px; width: 110px;">
-            <input type="number" id="prod-stock" placeholder="الكمية" value="0" style="padding: 10px; background: #0f172a; border: 1px solid var(--border-color); color: white; border-radius: 6px; width: 90px;">
+            <input type="number" step="0.1" id="prod-stock" placeholder="الكمية" value="0" style="padding: 10px; background: #0f172a; border: 1px solid var(--border-color); color: white; border-radius: 6px; width: 90px;">
+            <select id="prod-unit" style="padding: 10px; background: #0f172a; border: 1px solid var(--border-color); color: white; border-radius: 6px; width: 100px;">
+                <option value="قطعة">قطعة</option>
+                <option value="جرام">جرام</option>
+                <option value="كيلو">كيلو</option>
+                <option value="مليلتر">مليلتر</option>
+                <option value="لتر">لتر</option>
+            </select>
             <label style="display:flex; align-items:center; gap: 5px;"><input type="checkbox" id="prod-is-drink"> مشروب/خدمة (ليس له مخزون مباشر)</label>
             <button type="submit" style="background: var(--accent-green); color: white; border: none; padding: 10px 20px; border-radius: 6px; cursor: pointer; font-weight: bold;">حفظ</button>
         </form>
 
         <table>
             <thead>
-                <tr><th>الصنف</th><th>القسم</th><th>التكلفة</th><th>البيع</th><th>المخزون</th><th>النوع</th><th>إجراءات</th></tr>
+                <tr><th>الصنف</th><th>القسم</th><th>التكلفة</th><th>البيع</th><th>المخزون</th><th>الوحدة</th><th>النوع</th><th>إجراءات</th></tr>
             </thead>
             <tbody id="products-table-body"></tbody>
         </table>
@@ -262,7 +269,6 @@
         let selectedProductForVariant = null;
         let currentEditingVariantProductId = null;
 
-        // إعدادات التنبيهات السريعة (Toast) بواسطة SweetAlert2
         const Toast = Swal.mixin({
             toast: true,
             position: 'top-end',
@@ -273,7 +279,6 @@
             color: '#f8fafc'
         });
 
-        // دالة إشعارات تنبيه عامة
         function showAlert(title, icon = 'info', text = '') {
             Swal.fire({
                 title: title,
@@ -286,10 +291,40 @@
             });
         }
 
-        // دعم زر Enter في شاشة الدخول
         function handleLoginKey(event) {
             if (event.key === 'Enter') {
                 login();
+            }
+        }
+
+        // تسجيل الدخول التلقائي عند عمل Refresh
+        window.addEventListener('DOMContentLoaded', () => {
+            checkAutoLogin();
+        });
+
+        async function checkAutoLogin() {
+            const savedUser = localStorage.getItem('hawasb_user');
+            if (savedUser) {
+                const user = JSON.parse(savedUser);
+                const savedShiftId = localStorage.getItem('hawasb_shift_id');
+                
+                currentUser = user;
+                if (savedShiftId) currentShiftId = parseInt(savedShiftId);
+
+                document.getElementById('login-screen').classList.add('hidden');
+                document.getElementById('main-header').classList.remove('hidden');
+                document.getElementById('user-display').innerText = `المستخدم: ${currentUser.username}`;
+
+                if (currentUser.role === 'admin') {
+                    document.getElementById('admin-screen').classList.remove('hidden');
+                    loadAdminDashboard();
+                } else {
+                    document.getElementById('shift-display').innerText = currentShiftId ? `(الشيفت الحالي: #${currentShiftId})` : '';
+                    document.getElementById('pos-screen').classList.remove('hidden');
+                    loadProducts();
+                    renderCart();
+                    loadLiveShiftSummary();
+                }
             }
         }
 
@@ -306,6 +341,7 @@
             if (res.ok) {
                 const data = await res.json();
                 currentUser = data.user;
+                localStorage.setItem('hawasb_user', JSON.stringify(currentUser));
 
                 document.getElementById('login-screen').classList.add('hidden');
                 document.getElementById('main-header').classList.remove('hidden');
@@ -329,6 +365,7 @@
                         currentShiftId = shiftData.shift_id;
                     }
 
+                    localStorage.setItem('hawasb_shift_id', currentShiftId);
                     document.getElementById('shift-display').innerText = `(الشيفت الحالي: #${currentShiftId})`;
                     document.getElementById('pos-screen').classList.remove('hidden');
                     loadProducts();
@@ -357,7 +394,7 @@
                     <div class="card" onclick="handleProductClick(${p.id})">
                         <h4>${p.name}</h4>
                         <p>${hasVariants ? 'خيارات متعددة' : p.selling_price + ' ج.م'}</p>
-                        <small style="color:var(--text-muted);">${p.is_drink ? 'مشروب/خدمة' : 'مخزون: ' + p.stock_quantity}</small>
+                        <small style="color:var(--text-muted);">${p.is_drink ? 'مشروب/خدمة' : 'المخزون: ' + p.stock_quantity + ' ' + (p.unit_type || 'قطعة')}</small>
                     </div>`;
             });
         }
@@ -419,6 +456,7 @@
 
         function renderCart() {
             const list = document.getElementById('cart-list');
+            if (!list) return;
             list.innerHTML = '';
             let total = 0;
             cart.forEach((item, index) => {
@@ -523,6 +561,7 @@
                 });
 
                 localStorage.removeItem('hawasb_cart');
+                localStorage.removeItem('hawasb_shift_id');
                 logout();
             }
         }
@@ -636,7 +675,9 @@
                 prodBody.innerHTML += `
                     <tr>
                         <td>${p.name}</td><td>${p.category}</td><td>${p.cost_price} ج.م</td><td>${p.selling_price} ج.م</td>
-                        <td>${p.is_drink ? '-' : p.stock_quantity}</td><td>${p.is_drink ? 'مشروب/خدمة' : 'بضاعة'}</td>
+                        <td>${p.is_drink ? '-' : p.stock_quantity}</td>
+                        <td><b style="color:var(--accent-gold);">${p.unit_type || 'قطعة'}</b></td>
+                        <td>${p.is_drink ? 'مشروب/خدمة' : 'بضاعة/خامة'}</td>
                         <td>
                             <button onclick='editProduct(${JSON.stringify(p)})' style="background:var(--accent-blue); color:white; border:none; padding:4px 8px; border-radius:4px; cursor:pointer;">تعديل</button>
                             <button onclick='openIngredientsModal(${p.id}, "${p.name}")' style="background:#8e44ad; color:white; border:none; padding:4px 8px; border-radius:4px; cursor:pointer; font-weight:bold;">🧪 المكونات</button>
@@ -764,14 +805,14 @@
             let options = '<option value="">-- اختر الخامة --</option>';
             products.filter(p => !p.is_drink).forEach(p => {
                 let sel = p.id === selectedIngId ? 'selected' : '';
-                options += `<option value="${p.id}" ${sel}>${p.name} (المخزون: ${p.stock_quantity})</option>`;
+                options += `<option value="${p.id}" ${sel}>${p.name} (المخزون: ${p.stock_quantity} ${p.unit_type || 'قطعة'})</option>`;
             });
             const row = document.createElement('div');
             row.className = 'ing-row';
             row.style.cssText = 'display: flex; gap: 10px; margin-bottom: 10px; align-items: center;';
             row.innerHTML = `
                 <select class="ing-select" style="flex:2; padding:8px; background:#0f172a; border:1px solid var(--border-color); color:white; border-radius:6px;">${options}</select>
-                <input type="number" step="0.1" value="${quantity}" placeholder="الكمية" class="ing-qty" style="flex:1; padding:8px; background:#0f172a; border:1px solid var(--border-color); color:white; border-radius:6px;">
+                <input type="number" step="0.1" value="${quantity}" placeholder="الكمية المطلوبة" class="ing-qty" style="flex:1; padding:8px; background:#0f172a; border:1px solid var(--border-color); color:white; border-radius:6px;">
                 <button onclick="this.parentElement.remove()" style="background:var(--accent-red); color:white; border:none; padding:8px 12px; border-radius:6px; cursor:pointer;">×</button>`;
             container.appendChild(row);
         }
@@ -906,7 +947,8 @@
                 category: document.getElementById('prod-category').value,
                 cost_price: parseFloat(document.getElementById('prod-cost').value),
                 selling_price: parseFloat(document.getElementById('prod-price').value),
-                stock_quantity: parseInt(document.getElementById('prod-stock').value) || 0,
+                stock_quantity: parseFloat(document.getElementById('prod-stock').value) || 0,
+                unit_type: document.getElementById('prod-unit').value,
                 is_drink: document.getElementById('prod-is-drink').checked
             };
 
@@ -929,10 +971,15 @@
             document.getElementById('prod-cost').value = p.cost_price;
             document.getElementById('prod-price').value = p.selling_price;
             document.getElementById('prod-stock').value = p.stock_quantity;
+            document.getElementById('prod-unit').value = p.unit_type || 'قطعة';
             document.getElementById('prod-is-drink').checked = p.is_drink === 1;
         }
 
-        function logout() { location.reload(); }
+        function logout() {
+            localStorage.removeItem('hawasb_user');
+            localStorage.removeItem('hawasb_shift_id');
+            location.reload(); 
+        }
     </script>
 </body>
 </html>
