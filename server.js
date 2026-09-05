@@ -31,8 +31,11 @@ async function initDB() {
                 cost_price NUMERIC,
                 selling_price NUMERIC,
                 stock_quantity INT DEFAULT 0,
+                unit_type VARCHAR(50) DEFAULT 'قطعة',
                 is_drink INT DEFAULT 0
             );
+            ALTER TABLE products ADD COLUMN IF NOT EXISTS unit_type VARCHAR(50) DEFAULT 'قطعة';
+            
             CREATE TABLE IF NOT EXISTS product_ingredients (
                 id SERIAL PRIMARY KEY,
                 parent_product_id INT REFERENCES products(id) ON DELETE CASCADE,
@@ -163,18 +166,19 @@ app.get('/api/products', async (req, res) => {
 
 // 5. حفظ أو تعديل صنف
 app.post('/api/products', async (req, res) => {
-    const { id, name, category, cost_price, selling_price, stock_quantity, is_drink } = req.body;
+    const { id, name, category, cost_price, selling_price, stock_quantity, unit_type, is_drink } = req.body;
+    const unit = unit_type || 'قطعة';
     try {
         if (id) {
             await pool.query(
-                'UPDATE products SET name=$1, category=$2, cost_price=$3, selling_price=$4, stock_quantity=$5, is_drink=$6 WHERE id=$7',
-                [name, category, cost_price, selling_price, stock_quantity, is_drink ? 1 : 0, id]
+                'UPDATE products SET name=$1, category=$2, cost_price=$3, selling_price=$4, stock_quantity=$5, unit_type=$6, is_drink=$7 WHERE id=$8',
+                [name, category, cost_price, selling_price, stock_quantity, unit, is_drink ? 1 : 0, id]
             );
             res.json({ message: 'تم التحديث' });
         } else {
             const result = await pool.query(
-                'INSERT INTO products (name, category, cost_price, selling_price, stock_quantity, is_drink) VALUES ($1, $2, $3, $4, $5, $6) RETURNING id',
-                [name, category, cost_price, selling_price, stock_quantity, is_drink ? 1 : 0]
+                'INSERT INTO products (name, category, cost_price, selling_price, stock_quantity, unit_type, is_drink) VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING id',
+                [name, category, cost_price, selling_price, stock_quantity, unit, is_drink ? 1 : 0]
             );
             res.json({ id: result.rows[0].id });
         }
@@ -213,7 +217,7 @@ app.post('/api/product-ingredients', async (req, res) => {
 app.get('/api/product-ingredients/:id', async (req, res) => {
     try {
         const result = await pool.query(
-            'SELECT pi.*, p.name FROM product_ingredients pi JOIN products p ON pi.ingredient_id = p.id WHERE pi.parent_product_id = $1',
+            'SELECT pi.*, p.name, p.unit_type FROM product_ingredients pi JOIN products p ON pi.ingredient_id = p.id WHERE pi.parent_product_id = $1',
             [req.params.id]
         );
         res.json(result.rows);
