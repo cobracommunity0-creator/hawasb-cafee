@@ -796,32 +796,62 @@
             }
         }
 
-        async function checkout(isStaffOrder = false) {
-            if (cart.length === 0) return showAlert('تنبيه', 'warning', 'السلة فارغة!');
-            const paidAmount = parseFloat(document.getElementById('paid-amount').value) || 0;
+       async function checkout(isStaffOrder = false) {
+    if (!cart || cart.length === 0) {
+        return showAlert('تنبيه', 'warning', 'السلة فارغة!');
+    }
 
-            const res = await fetch('/api/checkout', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ shift_id: currentShiftId, cart, is_staff_order: isStaffOrder, paid_amount: paidAmount })
+    if (!currentShiftId) {
+        return showAlert('تنبيه', 'error', 'لا يوجد شيفت مفتوح حالياً!');
+    }
+
+    const paidInput = document.getElementById('paid-amount').value;
+    const paidAmount = paidInput !== '' ? parseFloat(paidInput) : 0;
+
+    try {
+        const res = await fetch('/api/checkout', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                shift_id: currentShiftId,
+                cart: cart,
+                is_staff_order: isStaffOrder,
+                paid_amount: paidAmount
+            })
+        });
+
+        if (res.ok) {
+            const data = await res.json();
+            let msg = 'تم إتمام البيع بنجاح';
+            if (data.tip > 0) {
+                msg += `<br><span style="color:#f59e0b;">🎁 إجمالي التيبس: <b>${formatMoney(data.tip)} ج.م</b></span>`;
+            }
+
+            Swal.fire({
+                title: 'تمت العملية',
+                html: msg,
+                icon: 'success',
+                background: '#1f293d',
+                color: '#f9fafb',
+                confirmButtonColor: '#10b981'
             });
 
-            if (res.ok) {
-                const data = await res.json();
-                let msg = 'تم إتمام البيع بنجاح';
-                if (data.tip > 0) msg += `<br><span style="color:#f59e0b;">🎁 إجمالي التيبس: <b>${formatMoney(data.tip)} ج.م</b></span>`;
-
-                Swal.fire({ title: 'تمت العملية', html: msg, icon: 'success', background: '#1f293d', color: '#f9fafb', confirmButtonColor: '#10b981' });
-
-                cart = [];
-                localStorage.removeItem('hawasb_cart');
-                document.getElementById('paid-amount').value = '';
-                document.getElementById('change-box').innerText = '';
-                renderCart();
-                await loadProducts();
-                loadLiveShiftSummary();
-            }
+            cart = [];
+            localStorage.removeItem('hawasb_cart');
+            document.getElementById('paid-amount').value = '';
+            document.getElementById('change-box').innerText = '';
+            renderCart();
+            await loadProducts();
+            loadLiveShiftSummary();
+        } else {
+            const errData = await res.json();
+            showAlert('خطأ', 'error', errData.error || 'حدث خطأ أثناء إتمام البيع');
         }
+    } catch (err) {
+        console.error('Checkout error:', err);
+        showAlert('خطأ في الاتصال', 'error', 'تعذر الاتصال بالخادم');
+    }
+}
 
         async function loadLiveShiftSummary() {
             if (!currentShiftId) return;
