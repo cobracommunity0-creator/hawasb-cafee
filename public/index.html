@@ -1,5 +1,14 @@
-<!-- CSS جديد لتطبيق نظام التبويبات والبساطة -->
-<style>
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>حواسب كافيه - Powered By #عمرو_حواسب ❤️</title>
+    <!-- SweetAlert2 -->
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+   <style>
     /* Admin Layout with Sidebar Navigation */
     .admin-layout {
         display: flex;
@@ -67,8 +76,97 @@
         to { opacity: 1; transform: translateY(0); }
     }
 </style>
+</head>
+<body>
 
-<!-- Admin Screen Container -->
+    <!-- Login Screen -->
+    <div id="login-screen" class="login-container">
+        <h1>☕ حواسب كافيه</h1>
+        <p class="tag">Powered By #عمرو_حواسب ❤️</p>
+        <h3 style="margin-bottom: 15px; color: var(--text-muted);">تسجيل الدخول</h3>
+        <input type="text" id="username" placeholder="اسم المستخدم" onkeydown="handleLoginKey(event)">
+        <input type="password" id="pin" placeholder="رمز PIN" onkeydown="handleLoginKey(event)">
+        <button onclick="login()"><i class="fa-solid fa-right-to-bracket"></i> دخول للنظام</button>
+    </div>
+
+    <!-- Main Header -->
+    <header id="main-header" class="hidden">
+        <div class="brand-logo">
+            <span>☕ حواسب كافيه</span>
+            <span style="font-size: 11px; color: #f43f5e; font-weight: normal;">#عمرو_حواسب</span>
+        </div>
+        <div style="display: flex; align-items: center; gap: 15px;">
+            <div class="user-badge" id="user-display"></div>
+            <span id="shift-display" style="font-size: 13px; color: var(--text-muted);"></span>
+            <button class="btn-logout" onclick="logout()"><i class="fa-solid fa-power-off"></i> خروج</button>
+        </div>
+    </header>
+
+    <!-- POS Screen -->
+    <div id="pos-screen" class="pos-container hidden">
+        <div class="products-section">
+            <!-- Search & Categories Bar -->
+            <div class="search-box">
+                <i class="fa-solid fa-magnifying-glass"></i>
+                <input type="text" id="search-input" placeholder="بحث عن صنف..." oninput="filterProducts()">
+            </div>
+
+            <div class="category-bar" id="category-bar">
+                <button class="cat-btn active" onclick="filterCategory('ALL')">الكل</button>
+            </div>
+
+            <!-- Products Grid -->
+            <div id="products-grid" class="products-grid"></div>
+        </div>
+
+        <!-- Cart Sidebar -->
+        <div class="cart-section">
+            <div class="cart-header">
+                <h2><i class="fa-solid fa-cart-shopping" style="color: var(--accent-primary);"></i> الطلب الحالي</h2>
+                <button onclick="clearCart()" style="background: none; border: none; color: var(--text-muted); cursor: pointer; font-size: 12px;"><i class="fa-solid fa-trash"></i> تفريغ</button>
+            </div>
+
+            <div class="cart-list" id="cart-list"></div>
+            
+            <div class="cart-summary">
+                <div class="summary-row">
+                    <span>إجمالي المشتريات:</span>
+                    <b id="cart-subtotal">0 ج.م</b>
+                </div>
+                <div style="display: flex; flex-direction: column; gap: 5px; margin-top: 5px;">
+                    <label style="font-size: 12px; color: var(--text-muted);">المبلغ المدفوع كاش:</label>
+                    <input type="number" id="paid-amount" placeholder="0" style="padding: 8px; background: var(--bg-card); border: 1px solid var(--border-color); color: white; border-radius: var(--radius-sm); text-align: center; outline: none;" oninput="calculateChange()">
+                </div>
+                <div id="change-box" style="font-size: 12px; color: var(--accent-primary); font-weight: bold; text-align: center; min-height: 16px;"></div>
+                <div class="summary-row summary-total">
+                    <span>المطلوب دافعه:</span>
+                    <span id="cart-total">0 ج.م</span>
+                </div>
+            </div>
+
+            <div class="cart-actions">
+                <button class="btn-action btn-checkout" onclick="checkout(false)"><i class="fa-solid fa-check"></i> إتمام البيع (سعر عادي)</button>
+                <button class="btn-action btn-staff" onclick="checkout(true)"><i class="fa-solid fa-user-tag"></i> طلب موظف (بسعر التكلفة)</button>
+
+                <div class="live-badge">
+                    <div class="badge-box">
+                        <span>🔴 إيراد الشيفت:</span>
+                        <b id="live-sales" style="color:var(--accent-primary);">0 ج.م</b>
+                    </div>
+                    <div class="badge-box" style="border-right: 1px solid var(--border-color);">
+                        <span>🎁 إجمالي التيبس:</span>
+                        <b id="live-tips" style="color:var(--accent-purple);">0 ج.م</b>
+                    </div>
+                </div>
+
+                <button class="btn-action btn-info" onclick="openMyShiftDetails()"><i class="fa-solid fa-list-check"></i> تفاصيل مبيعاتي الحالية</button>
+                <button class="btn-action btn-shift" onclick="endShift()"><i class="fa-solid fa-lock"></i> تقفيل الشيفت</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Admin Screen -->
+    <!-- Admin Screen Container -->
 <div id="admin-screen" class="pos-container hidden">
     <div class="admin-layout" style="width: 100%;">
         
@@ -222,9 +320,88 @@
     </div>
 </div>
 
-<!-- دالة التنقل بين التبويبات JavaScript -->
-<script>
-    function switchAdminTab(tabId, btnElement) {
+    <!-- Modals -->
+    <div id="live-modal" class="modal hidden">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 id="modal-title" style="color: var(--accent-primary);">🔴 المبيعات الحية</h3>
+                <button class="close-btn" onclick="closeLiveModal()">×</button>
+            </div>
+            <table>
+                <thead>
+                    <tr><th>الصنف</th><th>الكمية</th><th>سعر الوحدة</th><th>الإجمالي</th><th>التوقيت</th></tr>
+                </thead>
+                <tbody id="live-details-body"></tbody>
+            </table>
+        </div>
+    </div>
+
+    <div id="ingredients-modal" class="modal hidden">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 id="ing-modal-title" style="color: var(--accent-primary);">🧪 المكونات والخامات</h3>
+                <button class="close-btn" onclick="closeIngredientsModal()">×</button>
+            </div>
+            <div id="ingredients-form-container"></div>
+            <button onclick="addIngredientRow()" style="background: var(--accent-info); color: white; border: none; padding: 8px 15px; border-radius: 6px; cursor: pointer; margin-top: 10px;">+ إضافة خامة</button>
+            <button onclick="saveProductIngredients()" style="background: var(--accent-success); color: white; border: none; padding: 8px 20px; border-radius: 6px; cursor: pointer; margin-top: 10px; float: left; font-weight: bold;">حفظ</button>
+        </div>
+    </div>
+
+    <div id="variant-modal" class="modal hidden">
+        <div class="modal-content" style="max-width: 400px; text-align: center;">
+            <div class="modal-header">
+                <h3 id="variant-modal-title" style="color: var(--accent-primary);">اختر الحجم / الإضافة</h3>
+                <button class="close-btn" onclick="closeVariantModal()">×</button>
+            </div>
+            <div id="variant-options-list" style="display: flex; flex-direction: column; gap: 10px; margin-top: 15px;"></div>
+        </div>
+    </div>
+
+    <div id="admin-variants-modal" class="modal hidden">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 id="admin-var-modal-title" style="color: var(--accent-primary);">⚙️ الخيارات والأحجام</h3>
+                <button class="close-btn" onclick="closeAdminVariantsModal()">×</button>
+            </div>
+            <div id="admin-variants-form-container"></div>
+            <button onclick="addVariantRow()" style="background: var(--accent-info); color: white; border: none; padding: 8px 15px; border-radius: 6px; cursor: pointer; margin-top: 10px;">+ إضافة خيار</button>
+            <button onclick="saveProductVariants()" style="background: var(--accent-success); color: white; border: none; padding: 8px 20px; border-radius: 6px; cursor: pointer; margin-top: 10px; float: left; font-weight: bold;">حفظ</button>
+        </div>
+    </div>
+
+    <script>
+        let currentUser = null;
+        let currentShiftId = null;
+        let products = [];
+        let cart = JSON.parse(localStorage.getItem('hawasb_cart')) || [];
+        let activeCategory = 'ALL';
+        let currentEditingParentId = null;
+        let selectedProductForVariant = null;
+        let currentEditingVariantProductId = null;
+
+        const Toast = Swal.mixin({
+            toast: true,
+            position: 'top-end',
+            showConfirmButton: false,
+            timer: 1800,
+            timerProgressBar: true,
+            background: '#1e293b',
+            color: '#f8fafc'
+        });
+
+        function showAlert(title, icon = 'info', text = '') {
+            Swal.fire({
+                title: title,
+                text: text,
+                icon: icon,
+                background: '#1e293b',
+                color: '#f8fafc',
+                confirmButtonColor: '#10b981'
+            });
+        }
+
+        function switchAdminTab(tabId, btnElement) {
         // إخفاء كافة الأقسام
         document.querySelectorAll('.tab-pane').forEach(pane => pane.classList.remove('active'));
         // إزالة التحديد من أزرار القائمة الجانبية
@@ -234,4 +411,684 @@
         document.getElementById(tabId).classList.add('active');
         btnElement.classList.add('active');
     }
-</script>
+
+        function handleLoginKey(event) {
+            if (event.key === 'Enter') login();
+        }
+
+        window.addEventListener('DOMContentLoaded', () => {
+            checkAutoLogin();
+        });
+
+        async function checkAutoLogin() {
+            const savedUser = localStorage.getItem('hawasb_user');
+            if (savedUser) {
+                const user = JSON.parse(savedUser);
+                const savedShiftId = localStorage.getItem('hawasb_shift_id');
+                
+                currentUser = user;
+                if (savedShiftId) currentShiftId = parseInt(savedShiftId);
+
+                document.getElementById('login-screen').classList.add('hidden');
+                document.getElementById('main-header').classList.remove('hidden');
+                document.getElementById('user-display').innerText = currentUser.username;
+
+                if (currentUser.role === 'admin') {
+                    document.getElementById('admin-screen').classList.remove('hidden');
+                    loadAdminDashboard();
+                } else {
+                    document.getElementById('shift-display').innerText = currentShiftId ? `(شيفت #${currentShiftId})` : '';
+                    document.getElementById('pos-screen').classList.remove('hidden');
+                    await loadProducts();
+                    renderCart();
+                    loadLiveShiftSummary();
+                }
+            }
+        }
+
+        async function login() {
+            const username = document.getElementById('username').value;
+            const pin = document.getElementById('pin').value;
+
+            const res = await fetch('/api/login', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ username, pin })
+            });
+
+            if (res.ok) {
+                const data = await res.json();
+                currentUser = data.user;
+                localStorage.setItem('hawasb_user', JSON.stringify(currentUser));
+
+                document.getElementById('login-screen').classList.add('hidden');
+                document.getElementById('main-header').classList.remove('hidden');
+                document.getElementById('user-display').innerText = currentUser.username;
+
+                Toast.fire({ icon: 'success', title: `أهلاً بك، ${currentUser.username}` });
+
+                if (currentUser.role === 'admin') {
+                    document.getElementById('admin-screen').classList.remove('hidden');
+                    loadAdminDashboard();
+                } else {
+                    if (data.activeShift) {
+                        currentShiftId = data.activeShift.id;
+                    } else {
+                        const shiftRes = await fetch('/api/start-shift', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ user_id: currentUser.id })
+                        });
+                        const shiftData = await shiftRes.json();
+                        currentShiftId = shiftData.shift_id;
+                    }
+
+                    localStorage.setItem('hawasb_shift_id', currentShiftId);
+                    document.getElementById('shift-display').innerText = `(شيفت #${currentShiftId})`;
+                    document.getElementById('pos-screen').classList.remove('hidden');
+                    await loadProducts();
+                    renderCart();
+                    loadLiveShiftSummary();
+                }
+            } else { 
+                showAlert('خطأ', 'error', 'بيانات الدخول غير صحيحة'); 
+            }
+        }
+
+        async function loadProducts() {
+            const res = await fetch('/api/products');
+            products = await res.json();
+
+            for (let p of products) {
+                const varRes = await fetch(`/api/product-variants/${p.id}`);
+                p.variants = await varRes.json();
+            }
+
+            renderCategories();
+            renderProductsGrid();
+        }
+
+        function renderCategories() {
+            const categories = ['ALL', ...new Set(products.map(p => p.category).filter(Boolean))];
+            const bar = document.getElementById('category-bar');
+            bar.innerHTML = '';
+            
+            categories.forEach(cat => {
+                const btn = document.createElement('button');
+                btn.className = `cat-btn ${activeCategory === cat ? 'active' : ''}`;
+                btn.innerText = cat === 'ALL' ? 'الكل' : cat;
+                btn.onclick = () => filterCategory(cat);
+                bar.appendChild(btn);
+            });
+        }
+
+        function filterCategory(cat) {
+            activeCategory = cat;
+            renderCategories();
+            filterProducts();
+        }
+
+        function filterProducts() {
+            const searchQuery = document.getElementById('search-input').value.toLowerCase();
+            const filtered = products.filter(p => {
+                const matchesCategory = activeCategory === 'ALL' || p.category === activeCategory;
+                const matchesSearch = p.name.toLowerCase().includes(searchQuery);
+                return matchesCategory && matchesSearch;
+            });
+            renderProductsGrid(filtered);
+        }
+
+        function renderProductsGrid(itemsToRender = products) {
+            const grid = document.getElementById('products-grid');
+            grid.innerHTML = '';
+
+            itemsToRender.forEach(p => {
+                const hasVariants = p.variants && p.variants.length > 0;
+                grid.innerHTML += `
+                    <div class="product-card" onclick="handleProductClick(${p.id})">
+                        <div>
+                            <div class="product-title">${p.name}</div>
+                            <div class="product-price">${hasVariants ? 'خيارات متعددة' : p.selling_price + ' ج.م'}</div>
+                        </div>
+                        <div class="product-badge">${p.is_drink ? 'مشروب/خدمة' : 'المخزون: ' + p.stock_quantity + ' ' + (p.unit_type || 'قطعة')}</div>
+                    </div>`;
+            });
+        }
+
+        function handleProductClick(id) {
+            const p = products.find(x => x.id === id);
+            if (p.variants && p.variants.length > 0) {
+                selectedProductForVariant = p;
+                document.getElementById('variant-modal-title').innerText = `خيارات ${p.name}`;
+                const container = document.getElementById('variant-options-list');
+                container.innerHTML = '';
+
+                p.variants.forEach(v => {
+                    const finalPrice = p.selling_price + v.price_modifier;
+                    container.innerHTML += `
+                        <button class="btn-action btn-info" onclick="selectVariantAndAddToCart('${v.variant_name}', ${v.price_modifier}, ${v.cost_modifier})">
+                            ${v.variant_name} (${finalPrice} ج.م)
+                        </button>`;
+                });
+
+                document.getElementById('variant-modal').classList.remove('hidden');
+            } else {
+                addToCart(p.id, p.name, p.selling_price, p.cost_price);
+            }
+        }
+
+        function selectVariantAndAddToCart(variantName, priceModifier, costModifier) {
+            const p = selectedProductForVariant;
+            const fullName = `${p.name} (${variantName})`;
+            const finalPrice = p.selling_price + priceModifier;
+            const finalCost = p.cost_price + costModifier;
+
+            addToCart(p.id, fullName, finalPrice, finalCost);
+            closeVariantModal();
+        }
+
+        function closeVariantModal() { document.getElementById('variant-modal').classList.add('hidden'); }
+
+        function addToCart(id, name, price, cost) {
+            const cartKey = `${id}_${name}`;
+            const item = cart.find(x => x.cartItemId === cartKey);
+            if (item) {
+                item.qty++;
+            } else {
+                cart.push({ cartItemId: cartKey, id, name, price, cost, qty: 1 });
+            }
+            saveCartAndRender();
+            Toast.fire({ icon: 'success', title: `إضافة ${name}` });
+        }
+
+        function changeQty(index, delta) {
+            cart[index].qty += delta;
+            if (cart[index].qty <= 0) {
+                cart.splice(index, 1);
+            }
+            saveCartAndRender();
+        }
+
+        function removeFromCart(index) {
+            cart.splice(index, 1);
+            saveCartAndRender();
+        }
+
+        function clearCart() {
+            cart = [];
+            saveCartAndRender();
+        }
+
+        function saveCartAndRender() {
+            localStorage.setItem('hawasb_cart', JSON.stringify(cart));
+            renderCart();
+        }
+
+        function renderCart() {
+            const list = document.getElementById('cart-list');
+            if (!list) return;
+            list.innerHTML = '';
+            let total = 0;
+
+            cart.forEach((item, index) => {
+                total += item.price * item.qty;
+                list.innerHTML += `
+                    <div class="cart-item">
+                        <div class="cart-item-info">
+                            <span class="cart-item-title">${item.name}</span>
+                            <span class="cart-item-price">${item.price * item.qty} ج.م (${item.price} ج.م)</span>
+                        </div>
+                        <div class="cart-qty-controls">
+                            <button class="qty-btn" onclick="changeQty(${index}, -1)">-</button>
+                            <span style="font-size: 13px; font-weight: bold; width: 18px; text-align: center;">${item.qty}</span>
+                            <button class="qty-btn" onclick="changeQty(${index}, 1)">+</button>
+                            <button class="qty-btn" onclick="removeFromCart(${index})" style="color: var(--accent-danger); margin-right: 5px;"><i class="fa-solid fa-xmark"></i></button>
+                        </div>
+                    </div>`;
+            });
+
+            document.getElementById('cart-subtotal').innerText = `${total} ج.م`;
+            document.getElementById('cart-total').innerText = `${total} ج.م`;
+            calculateChange();
+        }
+
+        function calculateChange() {
+            const total = parseFloat(document.getElementById('cart-subtotal').innerText) || 0;
+            const paid = parseFloat(document.getElementById('paid-amount').value) || 0;
+            const changeBox = document.getElementById('change-box');
+            if (paid > total && total > 0) {
+                changeBox.innerText = `الباقي للعميل: ${paid - total} ج.م (يُحسب كـ Tip تلقائياً)`;
+            } else {
+                changeBox.innerText = '';
+            }
+        }
+
+        async function checkout(isStaffOrder = false) {
+            if (cart.length === 0) return showAlert('تنبيه', 'warning', 'السلة فارغة!');
+            const paidAmount = parseFloat(document.getElementById('paid-amount').value) || 0;
+
+            const res = await fetch('/api/checkout', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ shift_id: currentShiftId, cart, is_staff_order: isStaffOrder, paid_amount: paidAmount })
+            });
+
+            if (res.ok) {
+                const data = await res.json();
+                let msg = 'تم إتمام البيع بنجاح';
+                if (data.tip > 0) msg += `<br><span style="color:#f59e0b;">🎁 إجمالي التيبس: <b>${data.tip} ج.م</b></span>`;
+
+                Swal.fire({ title: 'تمت العملية', html: msg, icon: 'success', background: '#1e293b', color: '#f8fafc', confirmButtonColor: '#10b981' });
+
+                cart = [];
+                localStorage.removeItem('hawasb_cart');
+                document.getElementById('paid-amount').value = '';
+                document.getElementById('change-box').innerText = '';
+                renderCart();
+                await loadProducts();
+                loadLiveShiftSummary();
+            }
+        }
+
+        async function loadLiveShiftSummary() {
+            if (!currentShiftId) return;
+            const res = await fetch(`/api/shift-summary/${currentShiftId}`);
+            if (res.ok) {
+                const data = await res.json();
+                document.getElementById('live-sales').innerText = `${data.total_sales} ج.م`;
+                document.getElementById('live-tips').innerText = `${data.total_tips} ج.م`;
+            }
+        }
+
+        function openMyShiftDetails() {
+            if (!currentShiftId) return showAlert('تنبيه', 'warning', 'لا يوجد شيفت مفتوح حالياً');
+            openLiveShiftModal(currentShiftId, currentUser.username);
+        }
+
+        async function endShift() {
+            const { value: notes } = await Swal.fire({
+                title: 'تقفيل الشيفت',
+                input: 'textarea',
+                inputPlaceholder: 'أدخل الملاحظات إن وجدت...',
+                showCancelButton: true,
+                confirmButtonText: 'إغلاق الشيفت',
+                cancelButtonText: 'إلغاء',
+                confirmButtonColor: '#ef4444',
+                background: '#1e293b', color: '#f8fafc'
+            });
+
+            if (notes !== undefined) {
+                await fetch('/api/end-shift', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ shift_id: currentShiftId, notes })
+                });
+
+                localStorage.removeItem('hawasb_cart');
+                localStorage.removeItem('hawasb_shift_id');
+                logout();
+            }
+        }
+
+        /* --- Admin Code --- */
+        async function loadAdminDashboard() {
+            const res = await fetch('/api/admin/dashboard');
+            const data = await res.json();
+            products = data.products;
+
+            document.getElementById('stat-collected-cost').innerText = `${data.stats.collected_stock_cost} ج.م`;
+            document.getElementById('stat-remaining-cost').innerText = `${data.stats.remaining_stock_cost} ج.م`;
+
+            loadUsersTable();
+
+            const structuredData = {};
+            data.shifts.forEach(s => {
+                const d = new Date(s.start_time);
+                const monthKey = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+                const dateKey = s.shift_date;
+
+                if (!structuredData[monthKey]) structuredData[monthKey] = { sales: 0, profit: 0, tips: 0, days: {} };
+                if (!structuredData[monthKey].days[dateKey]) structuredData[monthKey].days[dateKey] = { sales: 0, profit: 0, tips: 0, shifts: [] };
+
+                structuredData[monthKey].sales += s.total_sales;
+                structuredData[monthKey].profit += s.total_profit;
+                structuredData[monthKey].tips += s.total_tips;
+
+                structuredData[monthKey].days[dateKey].sales += s.total_sales;
+                structuredData[monthKey].days[dateKey].profit += s.total_profit;
+                structuredData[monthKey].days[dateKey].tips += s.total_tips;
+                structuredData[monthKey].days[dateKey].shifts.push(s);
+            });
+
+            const container = document.getElementById('shifts-accordion-container');
+            container.innerHTML = '';
+
+            for (const monthKey in structuredData) {
+                const monthInfo = structuredData[monthKey];
+                let daysHtml = '';
+
+                for (const dateKey in monthInfo.days) {
+                    const dayInfo = monthInfo.days[dateKey];
+                    let tableRows = '';
+
+                    dayInfo.shifts.forEach(s => {
+                        let statusBtn = s.status === 'open' 
+                            ? `<button onclick="forceCloseShift(${s.id})" style="background:#e67e22; color:white; border:none; padding:4px 8px; border-radius:4px; cursor:pointer;">إغلاق طوارئ</button>`
+                            : '<span style="color:var(--accent-success);">مغلق</span>';
+
+                        tableRows += `
+                            <tr>
+                                <td>#${s.id}</td>
+                                <td><b>${s.username}</b></td>
+                                <td>${new Date(s.start_time).toLocaleTimeString('ar-EG')}</td>
+                                <td>${s.end_time ? new Date(s.end_time).toLocaleTimeString('ar-EG') : 'جارٍ...'}</td>
+                                <td><b style="color:var(--accent-primary);">${s.total_sales} ج.م</b></td>
+                                <td style="color:var(--accent-success);"><b>${s.total_profit} ج.م</b></td>
+                                <td style="color:var(--accent-purple);"><b>${s.total_tips} ج.م</b></td>
+                                <td>${statusBtn}</td>
+                                <td>${s.notes || '-'}</td>
+                                <td>
+                                    <button onclick="openLiveShiftModal(${s.id}, '${s.username}')" style="background:var(--accent-info); color:white; border:none; padding:5px 10px; border-radius:4px; cursor:pointer; font-weight:bold;">
+                                        🔴 المبيعات
+                                    </button>
+                                </td>
+                            </tr>`;
+                    });
+
+                    daysHtml += `
+                        <div class="day-accordion" id="accordion-day-${dateKey}">
+                            <div class="day-header" onclick="toggleAccordion('accordion-day-${dateKey}', event)">
+                                <span>📅 يوم: ${dateKey} (${dayInfo.shifts.length} شيفت)</span>
+                                <span style="font-size: 13px; font-weight: normal;">
+                                    مبيعات: <b style="color:var(--accent-primary);">${dayInfo.sales} ج.م</b> | أرباح: <b style="color:var(--accent-success);">${dayInfo.profit} ج.م</b> | تيبس: <b style="color:var(--accent-purple);">${dayInfo.tips} ج.م</b> 🔽
+                                </span>
+                            </div>
+                            <div class="day-content">
+                                <table>
+                                    <thead>
+                                        <tr><th>#</th><th>الكاشير</th><th>بدء</th><th>إغلاق</th><th>المبيعات</th><th>الربح</th><th>التيبس</th><th>الحالة</th><th>ملاحظات</th><th>المبيعات</th></tr>
+                                    </thead>
+                                    <tbody>${tableRows}</tbody>
+                                </table>
+                            </div>
+                        </div>`;
+                }
+
+                container.innerHTML += `
+                    <div class="month-accordion" id="accordion-month-${monthKey}">
+                        <div class="month-header" onclick="toggleAccordion('accordion-month-${monthKey}', event)">
+                            <span>🗓️ شهر: ${monthKey}</span>
+                            <span style="font-size: 13px; font-weight: normal;">
+                                إجمالي: <b style="color:var(--accent-primary);">${monthInfo.sales} ج.م</b> | الأرباح: <b style="color:var(--accent-success);">${monthInfo.profit} ج.م</b> | التيبس: <b style="color:var(--accent-purple);">${monthInfo.tips} ج.م</b> 🔽
+                            </span>
+                        </div>
+                        <div class="month-content">${daysHtml}</div>
+                    </div>`;
+            }
+
+            const prodBody = document.getElementById('products-table-body');
+            prodBody.innerHTML = '';
+            products.forEach(p => {
+                prodBody.innerHTML += `
+                    <tr>
+                        <td>${p.name}</td><td>${p.category}</td><td>${p.cost_price} ج.م</td><td>${p.selling_price} ج.م</td>
+                        <td>${p.is_drink ? '-' : p.stock_quantity}</td>
+                        <td><b style="color:var(--accent-primary);">${p.unit_type || 'قطعة'}</b></td>
+                        <td>${p.is_drink ? 'مشروب/خدمة' : 'بضاعة/خامة'}</td>
+                        <td>
+                            <button onclick='editProduct(${JSON.stringify(p)})' style="background:var(--accent-info); color:white; border:none; padding:4px 8px; border-radius:4px; cursor:pointer;">تعديل</button>
+                            <button onclick='openIngredientsModal(${p.id}, "${p.name}")' style="background:var(--accent-purple); color:white; border:none; padding:4px 8px; border-radius:4px; cursor:pointer; font-weight:bold;">🧪 المكونات</button>
+                            <button onclick='openAdminVariantsModal(${p.id}, "${p.name}")' style="background:#0284c7; color:white; border:none; padding:4px 8px; border-radius:4px; cursor:pointer; font-weight:bold;">⚙️ الخيارات</button>
+                            <button onclick='deleteProduct(${p.id}, "${p.name}")' style="background:var(--accent-danger); color:white; border:none; padding:4px 8px; border-radius:4px; cursor:pointer; font-weight:bold;">حذف</button>
+                        </td>
+                    </tr>`;
+            });
+        }
+
+        async function loadUsersTable() {
+            const res = await fetch('/api/admin/users');
+            const users = await res.json();
+            const tbody = document.getElementById('users-table-body');
+            tbody.innerHTML = '';
+            users.forEach(u => {
+                tbody.innerHTML += `
+                    <tr>
+                        <td>#${u.id}</td>
+                        <td><b>${u.username}</b></td>
+                        <td>${u.role === 'admin' ? 'مسؤول (Admin)' : 'كاشير (Cashier)'}</td>
+                        <td>
+                            <button onclick='editUser(${JSON.stringify(u)})' style="background:var(--accent-info); color:white; border:none; padding:4px 8px; border-radius:4px; cursor:pointer;">تعديل</button>
+                            <button onclick='deleteUser(${u.id}, "${u.username}")' style="background:var(--accent-danger); color:white; border:none; padding:4px 8px; border-radius:4px; cursor:pointer;">حذف</button>
+                        </td>
+                    </tr>`;
+            });
+        }
+
+        async function saveUser(e) {
+            e.preventDefault();
+            const id = document.getElementById('usr-id').value;
+            const username = document.getElementById('usr-name').value;
+            const pin = document.getElementById('usr-pin').value;
+            const role = document.getElementById('usr-role').value;
+
+            if (!id && !pin) return showAlert('تنبيه', 'warning', 'يجب تحديد رمز PIN للمستخدم الجديد!');
+
+            const res = await fetch('/api/admin/users', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ id: id || null, username, pin, role })
+            });
+
+            if (res.ok) {
+                Toast.fire({ icon: 'success', title: 'تم حفظ المستخدم' });
+                document.getElementById('user-form').reset();
+                document.getElementById('usr-id').value = '';
+                loadUsersTable();
+            }
+        }
+
+        function editUser(u) {
+            document.getElementById('usr-id').value = u.id;
+            document.getElementById('usr-name').value = u.username;
+            document.getElementById('usr-pin').value = '';
+            document.getElementById('usr-role').value = u.role;
+        }
+
+        async function deleteUser(id, username) {
+            const result = await Swal.fire({ title: 'حذف مستخدم؟', text: `سيتم حذف "${username}"`, icon: 'warning', showCancelButton: true, confirmButtonColor: '#ef4444', background: '#1e293b', color: '#f8fafc' });
+            if (result.isConfirmed) {
+                await fetch(`/api/admin/users/${id}`, { method: 'DELETE' });
+                loadUsersTable();
+            }
+        }
+
+        async function deleteProduct(id, name) {
+            const result = await Swal.fire({ title: 'حذف المنتج؟', text: `سيتم حذف "${name}"`, icon: 'warning', showCancelButton: true, confirmButtonColor: '#ef4444', background: '#1e293b', color: '#f8fafc' });
+            if (result.isConfirmed) {
+                await fetch(`/api/products/${id}`, { method: 'DELETE' });
+                loadAdminDashboard();
+            }
+        }
+
+        async function saveProduct(e) {
+            e.preventDefault();
+            const product = {
+                id: document.getElementById('prod-id').value || null,
+                name: document.getElementById('prod-name').value,
+                category: document.getElementById('prod-category').value,
+                cost_price: parseFloat(document.getElementById('prod-cost').value),
+                selling_price: parseFloat(document.getElementById('prod-price').value),
+                stock_quantity: parseFloat(document.getElementById('prod-stock').value) || 0,
+                unit_type: document.getElementById('prod-unit').value,
+                is_drink: document.getElementById('prod-is-drink').checked
+            };
+
+            await fetch('/api/products', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(product)
+            });
+
+            Toast.fire({ icon: 'success', title: 'تم حفظ الصنف' });
+            document.getElementById('product-form').reset();
+            document.getElementById('prod-id').value = '';
+            loadAdminDashboard();
+        }
+
+        function editProduct(p) {
+            document.getElementById('prod-id').value = p.id;
+            document.getElementById('prod-name').value = p.name;
+            document.getElementById('prod-category').value = p.category;
+            document.getElementById('prod-cost').value = p.cost_price;
+            document.getElementById('prod-price').value = p.selling_price;
+            document.getElementById('prod-stock').value = p.stock_quantity;
+            document.getElementById('prod-unit').value = p.unit_type || 'قطعة';
+            document.getElementById('prod-is-drink').checked = p.is_drink === 1;
+        }
+
+        async function openIngredientsModal(productId, productName) {
+            currentEditingParentId = productId;
+            document.getElementById('ing-modal-title').innerText = `🧪 مكونات (${productName})`;
+            const res = await fetch(`/api/product-ingredients/${productId}`);
+            const existingIngredients = await res.json();
+            const container = document.getElementById('ingredients-form-container');
+            container.innerHTML = '';
+            if (existingIngredients.length === 0) addIngredientRow();
+            else existingIngredients.forEach(ing => addIngredientRow(ing.ingredient_id, ing.quantity_required));
+            document.getElementById('ingredients-modal').classList.remove('hidden');
+        }
+
+        function addIngredientRow(selectedIngId = '', quantity = 1) {
+            const container = document.getElementById('ingredients-form-container');
+            let options = '<option value="">-- اختر الخامة --</option>';
+            products.filter(p => !p.is_drink).forEach(p => {
+                let sel = p.id === selectedIngId ? 'selected' : '';
+                options += `<option value="${p.id}" ${sel}>${p.name} (المخزون: ${p.stock_quantity} ${p.unit_type || 'قطعة'})</option>`;
+            });
+            const row = document.createElement('div');
+            row.className = 'ing-row';
+            row.style.cssText = 'display: flex; gap: 10px; margin-bottom: 10px; align-items: center;';
+            row.innerHTML = `
+                <select class="ing-select" style="flex:2; padding:8px; background:var(--bg-base); border:1px solid var(--border-color); color:white; border-radius:6px;">${options}</select>
+                <input type="number" step="0.1" value="${quantity}" placeholder="الكمية" class="ing-qty" style="flex:1; padding:8px; background:var(--bg-base); border:1px solid var(--border-color); color:white; border-radius:6px;">
+                <button onclick="this.parentElement.remove()" style="background:var(--accent-danger); color:white; border:none; padding:8px 12px; border-radius:6px; cursor:pointer;">×</button>`;
+            container.appendChild(row);
+        }
+
+        async function saveProductIngredients() {
+            const rows = document.querySelectorAll('.ing-row');
+            const ingredients = [];
+            rows.forEach(r => {
+                const ingId = r.querySelector('.ing-select').value;
+                const qty = parseFloat(r.querySelector('.ing-qty').value);
+                if (ingId && qty > 0) ingredients.push({ ingredient_id: parseInt(ingId), quantity_required: qty });
+            });
+            await fetch('/api/product-ingredients', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ parent_product_id: currentEditingParentId, ingredients })
+            });
+            Toast.fire({ icon: 'success', title: 'تم حفظ المكونات' });
+            closeIngredientsModal();
+        }
+
+        function closeIngredientsModal() { document.getElementById('ingredients-modal').classList.add('hidden'); }
+
+        async function openAdminVariantsModal(productId, productName) {
+            currentEditingVariantProductId = productId;
+            document.getElementById('admin-var-modal-title').innerText = `⚙️ أحجام/خيارات (${productName})`;
+            const res = await fetch(`/api/product-variants/${productId}`);
+            const variants = await res.json();
+            const container = document.getElementById('admin-variants-form-container');
+            container.innerHTML = '';
+            if (variants.length === 0) {
+                addVariantRow('كبير', 10, 5);
+                addVariantRow('صغير', 0, 0);
+            } else variants.forEach(v => addVariantRow(v.variant_name, v.price_modifier, v.cost_modifier));
+            document.getElementById('admin-variants-modal').classList.remove('hidden');
+        }
+
+        function addVariantRow(name = '', priceMod = 0, costMod = 0) {
+            const container = document.getElementById('admin-variants-form-container');
+            const row = document.createElement('div');
+            row.className = 'variant-row';
+            row.style.cssText = 'display: flex; gap: 10px; margin-bottom: 10px; align-items: center;';
+            row.innerHTML = `
+                <input type="text" value="${name}" placeholder="اسم الخيار" class="var-name" style="flex:2; padding:8px; background:var(--bg-base); border:1px solid var(--border-color); color:white; border-radius:6px;">
+                <input type="number" step="0.5" value="${priceMod}" placeholder="+ فرق البيع" class="var-price" style="flex:1; padding:8px; background:var(--bg-base); border:1px solid var(--border-color); color:white; border-radius:6px;">
+                <input type="number" step="0.5" value="${costMod}" placeholder="+ فرق التكلفة" class="var-cost" style="flex:1; padding:8px; background:var(--bg-base); border:1px solid var(--border-color); color:white; border-radius:6px;">
+                <button onclick="this.parentElement.remove()" style="background:var(--accent-danger); color:white; border:none; padding:8px 12px; border-radius:6px; cursor:pointer;">×</button>`;
+            container.appendChild(row);
+        }
+
+        async function saveProductVariants() {
+            const rows = document.querySelectorAll('.variant-row');
+            const variants = [];
+            rows.forEach(r => {
+                const name = r.querySelector('.var-name').value.trim();
+                const priceMod = parseFloat(r.querySelector('.var-price').value) || 0;
+                const costMod = parseFloat(r.querySelector('.var-cost').value) || 0;
+                if (name) variants.push({ variant_name: name, price_modifier: priceMod, cost_modifier: costMod });
+            });
+            await fetch('/api/product-variants', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ product_id: currentEditingVariantProductId, variants })
+            });
+            Toast.fire({ icon: 'success', title: 'تم حفظ الخيارات' });
+            closeAdminVariantsModal();
+            loadAdminDashboard();
+        }
+
+        function closeAdminVariantsModal() { document.getElementById('admin-variants-modal').classList.add('hidden'); }
+
+        function toggleAccordion(id, event) {
+            event.stopPropagation();
+            document.getElementById(id).classList.toggle('active');
+        }
+
+        async function openLiveShiftModal(shiftId, username) {
+            document.getElementById('modal-title').innerText = `🔴 مبيعات شيفت #${shiftId} (${username})`;
+            const res = await fetch(`/api/admin/shift-live-details/${shiftId}`);
+            const sales = await res.json();
+
+            const body = document.getElementById('live-details-body');
+            body.innerHTML = '';
+            if (sales.length === 0) body.innerHTML = '<tr><td colspan="5" style="color:var(--text-muted);">لا توجد مبيعات.</td></tr>';
+            else {
+                sales.forEach(item => {
+                    body.innerHTML += `
+                        <tr>
+                            <td><b>${item.name}</b> <small style="color:var(--text-muted);">(${item.category})</small></td>
+                            <td>${item.quantity}</td>
+                            <td>${item.unit_price} ج.م</td>
+                            <td><b style="color:var(--accent-primary);">${item.subtotal} ج.م</b></td>
+                            <td>${new Date(item.created_at).toLocaleTimeString('ar-EG')}</td>
+                        </tr>`;
+                });
+            }
+            document.getElementById('live-modal').classList.remove('hidden');
+        }
+
+        function closeLiveModal() { document.getElementById('live-modal').classList.add('hidden'); }
+
+        async function forceCloseShift(shiftId) {
+            const result = await Swal.fire({ title: 'إغلاق الشيفت طوارئ؟', icon: 'warning', showCancelButton: true, confirmButtonColor: '#e67e22', background: '#1e293b', color: '#f8fafc' });
+            if (result.isConfirmed) {
+                await fetch('/api/admin/force-close-shift', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ shift_id: shiftId })
+                });
+                loadAdminDashboard();
+            }
+        }
+
+        function logout() {
+            localStorage.removeItem('hawasb_user');
+            localStorage.removeItem('hawasb_shift_id');
+            location.reload(); 
+        }
+    </script>
+</body>
+</html>
