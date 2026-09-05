@@ -4,27 +4,31 @@ const path = require('path');
 const fs = require('fs');
 
 const app = express();
-const PORT = process.env.PORT || 3000; // 1. تعريف البورت لمنصة الرفع أو التشغيل المحلي
+const PORT = process.env.PORT || 3000;
 
 app.use(express.json());
-app.use(express.static(path.join(__dirname, 'public'))); // خدمة ملفات الـ public
+app.use(express.static(path.join(__dirname, 'public')));
 
-// توجيه الصفحة الرئيسية لملف index.html
 app.get('/', (req, res) => {
     res.sendFile(path.join(__dirname, 'public', 'index.html'));
 });
 
-const dbPath = './cafe.db';
+// إنشاء مجلد دائم للبيانات في حال وجود Persistent Disk أو تشغيل محلي
+const dataDir = process.env.DATA_DIR || path.join(__dirname, 'data');
+if (!fs.existsSync(dataDir)) {
+    fs.mkdirSync(dataDir, { recursive: true });
+}
+
+const dbPath = path.join(dataDir, 'cafe.db');
 const db = new sqlite3.Database(dbPath, (err) => {
     if (err) console.error('خطأ في الاتصال بقاعدة البيانات:', err);
-    else console.log('تم الاتصال بقاعدة البيانات بنجاح.');
+    else console.log('تم الاتصال بقاعدة البيانات بنجاح في المسار:', dbPath);
 });
 
-// دالة أخذ نسخة احتياطية مع تدوير النسخ (آخر 7 نسخ فقط)
 function backupDatabase() {
-    const backupDir = path.join(__dirname, 'backups');
+    const backupDir = path.join(dataDir, 'backups');
     if (!fs.existsSync(backupDir)) {
-        fs.mkdirSync(backupDir);
+        fs.mkdirSync(backupDir, { recursive: true });
     }
     const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
     const backupPath = path.join(backupDir, `cafe_backup_${timestamp}.db`);
@@ -32,7 +36,6 @@ function backupDatabase() {
     fs.copyFile(dbPath, backupPath, (err) => {
         if (!err) {
             console.log('تم إنشاء نسخة احتياطية لقاعدة البيانات بنجاح.');
-            // تنظيف النسخ القديمة والاحتفاظ بآخر 7 فقط
             fs.readdir(backupDir, (err, files) => {
                 if (!err) {
                     const backupFiles = files.filter(f => f.startsWith('cafe_backup_')).sort();
@@ -112,7 +115,7 @@ db.serialize(() => {
         (2, 'cashier', '1111', 'cashier')`);
 });
 
-// 1. تسجيل الدخول
+// باقي الـ Endpoints تبقى كما هي دون تغيير
 app.post('/api/login', (req, res) => {
     const { username, pin } = req.body;
     db.get(`SELECT * FROM users WHERE username = ? AND pin = ?`, [username, pin], (err, user) => {
@@ -128,7 +131,6 @@ app.post('/api/login', (req, res) => {
     });
 });
 
-// 2. إدارة المستخدمين (عرض / إضافة / تعديل / حذف)
 app.get('/api/admin/users', (req, res) => {
     db.all(`SELECT id, username, role FROM users`, [], (err, rows) => {
         if (err) return res.status(500).json({ error: err.message });
@@ -167,7 +169,6 @@ app.delete('/api/admin/users/:id', (req, res) => {
     });
 });
 
-// 3. بدء شيفت جديد
 app.post('/api/start-shift', (req, res) => {
     const { user_id } = req.body;
     const now = new Date();
@@ -180,7 +181,6 @@ app.post('/api/start-shift', (req, res) => {
         });
 });
 
-// 4. جلب الأصناف
 app.get('/api/products', (req, res) => {
     db.all(`SELECT * FROM products`, [], (err, rows) => {
         if (err) return res.status(500).json({ error: err.message });
@@ -188,7 +188,6 @@ app.get('/api/products', (req, res) => {
     });
 });
 
-// 5. حفظ أو تعديل صنف
 app.post('/api/products', (req, res) => {
     const { id, name, category, cost_price, selling_price, stock_quantity, is_drink } = req.body;
 
@@ -207,7 +206,6 @@ app.post('/api/products', (req, res) => {
     }
 });
 
-// 6. حذف صنف
 app.delete('/api/products/:id', (req, res) => {
     const productId = req.params.id;
     db.run(`DELETE FROM product_ingredients WHERE parent_product_id = ? OR ingredient_id = ?`, [productId, productId], (err) => {
@@ -222,7 +220,6 @@ app.delete('/api/products/:id', (req, res) => {
     });
 });
 
-// 7. ربط المكونات
 app.post('/api/product-ingredients', (req, res) => {
     const { parent_product_id, ingredients } = req.body;
     db.run(`DELETE FROM product_ingredients WHERE parent_product_id = ?`, [parent_product_id], (err) => {
@@ -244,7 +241,6 @@ app.get('/api/product-ingredients/:id', (req, res) => {
     });
 });
 
-// 8. الأحجام والخيارات
 app.post('/api/product-variants', (req, res) => {
     const { product_id, variants } = req.body;
     db.run(`DELETE FROM product_variants WHERE product_id = ?`, [product_id], (err) => {
@@ -265,7 +261,6 @@ app.get('/api/product-variants/:id', (req, res) => {
     });
 });
 
-// 9. إتمام البيع
 app.post('/api/checkout', (req, res) => {
     const { shift_id, cart, is_staff_order, paid_amount } = req.body;
 
@@ -297,7 +292,6 @@ app.post('/api/checkout', (req, res) => {
     });
 });
 
-// 10. ملخص الشيفت المباشر
 app.get('/api/shift-summary/:shift_id', (req, res) => {
     const shiftId = req.params.shift_id;
     db.get(`
@@ -312,18 +306,16 @@ app.get('/api/shift-summary/:shift_id', (req, res) => {
     });
 });
 
-// 11. إغلاق الشيفت (مع أخذ نسخة احتياطية تلقائية)
 app.post('/api/end-shift', (req, res) => {
     const { shift_id, notes } = req.body;
     db.run(`UPDATE shifts SET end_time = datetime('now', 'localtime'), status = 'closed', notes = ? WHERE id = ?`,
         [notes, shift_id], (err) => {
             if (err) return res.status(500).json({ error: err.message });
-            backupDatabase(); // أخذ النسخة الاحتياطية تلقائياً
+            backupDatabase();
             res.json({ message: 'تم إغلاق الشيفت' });
         });
 });
 
-// 12. تفاصيل مبيعات الشيفت
 app.get('/api/admin/shift-live-details/:shift_id', (req, res) => {
     db.all(`
         SELECT p.name, p.category, s.quantity, s.unit_price, (s.quantity * s.unit_price) as subtotal, s.created_at 
@@ -336,7 +328,6 @@ app.get('/api/admin/shift-live-details/:shift_id', (req, res) => {
     });
 });
 
-// 13. لوحة الأدمن
 app.get('/api/admin/dashboard', (req, res) => {
     db.all(`
         SELECT 
