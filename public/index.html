@@ -40,6 +40,16 @@
         body { background: var(--bg-base); color: var(--text-main); height: 100vh; overflow: hidden; }
         .hidden { display: none !important; }
 
+        /* Hide Spin Buttons for Number Inputs (إلغاء الأسهم من حقول الأرقام) */
+        input[type=number]::-webkit-inner-spin-button, 
+        input[type=number]::-webkit-outer-spin-button { 
+            -webkit-appearance: none; 
+            margin: 0; 
+        }
+        input[type=number] {
+            -moz-appearance: textfield;
+        }
+
         /* Custom Scrollbars */
         ::-webkit-scrollbar { width: 5px; height: 5px; }
         ::-webkit-scrollbar-track { background: transparent; }
@@ -133,13 +143,30 @@
         .tab-pane.active { display: block; animation: fadeIn 0.25s ease; }
         @keyframes fadeIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: translateY(0); } }
 
-        /* Floating Controls & Input Styling */
-        .form-group-floating { position: relative; flex: 1; min-width: 140px; display: flex; flex-direction: column; gap: 6px; }
-        .form-group-floating label { font-size: 12px; color: var(--accent-primary); font-weight: 700; display: flex; align-items: center; gap: 6px; }
-        .form-group-floating input, .form-group-floating select { padding: 11px 14px; background: var(--bg-base); border: 1px solid var(--border-color); color: white; border-radius: var(--radius-sm); outline: none; font-size: 14px; transition: 0.2s; }
+        /* Grid Structured Product Form (تنسيق منظم في شبكة) */
+        .product-form-card {
+            background: var(--bg-surface);
+            padding: 24px;
+            border-radius: var(--radius-md);
+            border: 1px solid var(--border-color);
+            margin-bottom: 28px;
+            display: flex;
+            flex-direction: column;
+            gap: 18px;
+        }
+
+        .form-grid-layout {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+            gap: 16px;
+        }
+
+        .form-group-floating { position: relative; display: flex; flex-direction: column; gap: 6px; }
+        .form-group-floating label { font-size: 13px; color: var(--accent-primary); font-weight: 700; display: flex; align-items: center; gap: 6px; }
+        .form-group-floating input, .form-group-floating select { padding: 12px 14px; background: var(--bg-base); border: 1px solid var(--border-color); color: white; border-radius: var(--radius-sm); outline: none; font-size: 14px; transition: 0.2s; }
         .form-group-floating input:focus, .form-group-floating select:focus { border-color: var(--accent-primary); box-shadow: 0 0 0 3px rgba(245, 158, 11, 0.15); }
         
-        .checkbox-floating { display: flex; align-items: center; gap: 10px; background: var(--bg-base); padding: 11px 14px; border-radius: var(--radius-sm); border: 1px solid var(--border-color); cursor: pointer; user-select: none; }
+        .checkbox-floating { display: flex; align-items: center; gap: 10px; background: var(--bg-base); padding: 11px 14px; border-radius: var(--radius-sm); border: 1px solid var(--border-color); cursor: pointer; user-select: none; height: 45px; }
         .checkbox-floating input { accent-color: var(--accent-primary); width: 18px; height: 18px; cursor: pointer; }
 
         /* Clean Analytics & Tables */
@@ -147,7 +174,7 @@
         .stat-card { flex: 1; background: var(--bg-surface); padding: 24px; border-radius: var(--radius-lg); border: 1px solid var(--border-color); text-align: center; }
 
         table { width: 100%; border-collapse: separate; border-spacing: 0; background: var(--bg-surface); border-radius: var(--radius-md); overflow: hidden; margin-top: 12px; border: 1px solid var(--border-color); }
-        th, td { padding: 14px 16px; text-align: center; border-bottom: 1px solid var(--border-color); font-size: 14px; }
+        th, td { padding: 14px 16px; text-align: center; border-bottom: 1px solid var(--border-color); font-size: 14px; white-space: nowrap; }
         th { background: rgba(255, 255, 255, 0.02); color: var(--accent-primary); font-weight: 700; }
         tr:last-child td { border-bottom: none; }
 
@@ -159,7 +186,7 @@
 
         .day-accordion { background: var(--bg-card); border-radius: var(--radius-sm); margin-bottom: 10px; border: 1px solid var(--border-color); overflow: hidden; }
         .day-header { background: rgba(255,255,255,0.01); padding: 14px 18px; display: flex; justify-content: space-between; align-items: center; cursor: pointer; font-weight: 700; font-size: 14px; }
-        .day-content { display: none; padding: 16px; background: var(--bg-surface); }
+        .day-content { display: none; padding: 16px; background: var(--bg-surface); overflow-x: auto; }
         .day-accordion.active .day-content { display: block; }
 
         /* Sleek Glass Modals */
@@ -302,66 +329,75 @@
 
                 <!-- TAB 2: Products Management -->
                 <div id="tab-products" class="tab-pane">
-                    <h3 style="color: var(--text-main); margin-bottom: 24px; font-weight: 800;"><i class="fa-solid fa-utensils" style="color: var(--accent-primary);"></i> إدارة الأصناف والأسعار</h3>
+                    <h3 style="color: var(--text-main); margin-bottom: 20px; font-weight: 800;"><i class="fa-solid fa-utensils" style="color: var(--accent-primary);"></i> إدارة الأصناف والأسعار</h3>
                     
-                    <form id="product-form" onsubmit="saveProduct(event)" style="background: var(--bg-surface); padding: 22px; border-radius: var(--radius-md); border: 1px solid var(--border-color); margin-bottom: 24px; display: flex; gap: 14px; flex-wrap: wrap; align-items: flex-end;">
+                    <form id="product-form" class="product-form-card" onsubmit="saveProduct(event)">
                         <input type="hidden" id="prod-id">
 
-                        <div class="form-group-floating">
-                            <label for="prod-name"><i class="fa-solid fa-tag"></i> اسم الصنف</label>
-                            <input type="text" id="prod-name" placeholder="مثال: إسبريسو" required>
+                        <div class="form-grid-layout">
+                            <div class="form-group-floating">
+                                <label for="prod-name"><i class="fa-solid fa-tag"></i> اسم الصنف</label>
+                                <input type="text" id="prod-name" placeholder="مثال: إسبريسو" required>
+                            </div>
+
+                            <div class="form-group-floating">
+                                <label for="prod-category"><i class="fa-solid fa-layer-group"></i> القسم (Category)</label>
+                                <input type="text" id="prod-category" placeholder="مثال: مشروبات ساخنة" required>
+                            </div>
+
+                            <div class="form-group-floating">
+                                <label for="prod-cost"><i class="fa-solid fa-coins"></i> سعر التكلفة</label>
+                                <input type="number" step="0.5" id="prod-cost" placeholder="0.0" required>
+                            </div>
+
+                            <div class="form-group-floating">
+                                <label for="prod-price"><i class="fa-solid fa-money-bill-wave"></i> سعر البيع</label>
+                                <input type="number" step="0.5" id="prod-price" placeholder="0.0" required>
+                            </div>
+
+                            <div class="form-group-floating">
+                                <label for="prod-stock"><i class="fa-solid fa-cubes"></i> الكمية المتاحة</label>
+                                <input type="number" step="0.1" id="prod-stock" placeholder="0" value="0">
+                            </div>
+
+                            <div class="form-group-floating">
+                                <label for="prod-unit"><i class="fa-solid fa-scale-balanced"></i> وحدة القياس</label>
+                                <select id="prod-unit">
+                                    <option value="قطعة">قطعة</option>
+                                    <option value="جرام">جرام</option>
+                                    <option value="كيلو">كيلو</option>
+                                    <option value="مليلتر">مليلتر</option>
+                                    <option value="لتر">لتر</option>
+                                </select>
+                            </div>
+
+                            <div class="form-group-floating">
+                                <label><i class="fa-solid fa-mug-hot"></i> تصنيف الصنف</label>
+                                <label class="checkbox-floating">
+                                    <input type="checkbox" id="prod-is-drink">
+                                    <span style="font-size: 13px; font-weight: 700;">مشروب / خدمة</span>
+                                </label>
+                            </div>
                         </div>
 
-                        <div class="form-group-floating">
-                            <label for="prod-category"><i class="fa-solid fa-layer-group"></i> القسم (Category)</label>
-                            <input type="text" id="prod-category" placeholder="مثال: مشروبات ساخنة" required>
+                        <div style="display: flex; justify-content: flex-end; gap: 10px; margin-top: 10px;">
+                            <button type="button" onclick="resetProductForm()" style="background: rgba(255,255,255,0.05); color: var(--text-muted); border: 1px solid var(--border-color); padding: 11px 20px; border-radius: var(--radius-sm); cursor: pointer; font-weight: 700;">
+                                إلغاء
+                            </button>
+                            <button type="submit" style="background: var(--accent-success); color: white; border: none; padding: 11px 28px; border-radius: var(--radius-sm); cursor: pointer; font-weight: 700;">
+                                <i class="fa-solid fa-floppy-disk"></i> حفظ الصنف
+                            </button>
                         </div>
-
-                        <div class="form-group-floating" style="max-width: 120px;">
-                            <label for="prod-cost"><i class="fa-solid fa-coins"></i> سعر التكلفة</label>
-                            <input type="number" step="0.5" id="prod-cost" placeholder="0.0" required>
-                        </div>
-
-                        <div class="form-group-floating" style="max-width: 120px;">
-                            <label for="prod-price"><i class="fa-solid fa-money-bill-wave"></i> سعر البيع</label>
-                            <input type="number" step="0.5" id="prod-price" placeholder="0.0" required>
-                        </div>
-
-                        <div class="form-group-floating" style="max-width: 110px;">
-                            <label for="prod-stock"><i class="fa-solid fa-cubes"></i> الكمية المتاحة</label>
-                            <input type="number" step="0.1" id="prod-stock" placeholder="0" value="0">
-                        </div>
-
-                        <div class="form-group-floating" style="max-width: 120px;">
-                            <label for="prod-unit"><i class="fa-solid fa-scale-balanced"></i> وحدة القياس</label>
-                            <select id="prod-unit">
-                                <option value="قطعة">قطعة</option>
-                                <option value="جرام">جرام</option>
-                                <option value="كيلو">كيلو</option>
-                                <option value="مليلتر">مليلتر</option>
-                                <option value="لتر">لتر</option>
-                            </select>
-                        </div>
-
-                        <div class="form-group-floating" style="max-width: 160px;">
-                            <label><i class="fa-solid fa-mug-hot"></i> تصنيف الصنف</label>
-                            <label class="checkbox-floating">
-                                <input type="checkbox" id="prod-is-drink">
-                                <span style="font-size: 13px; font-weight: 700;">مشروب / خدمة</span>
-                            </label>
-                        </div>
-
-                        <button type="submit" style="background: var(--accent-success); color: white; border: none; padding: 11px 24px; border-radius: var(--radius-sm); cursor: pointer; font-weight: 700; height: 44px;">
-                            <i class="fa-solid fa-floppy-disk"></i> حفظ الصنف
-                        </button>
                     </form>
 
-                    <table>
-                        <thead>
-                            <tr><th>الصنف</th><th>القسم</th><th>التكلفة</th><th>البيع</th><th>المخزون</th><th>الوحدة</th><th>النوع</th><th>إجراءات</th></tr>
-                        </thead>
-                        <tbody id="products-table-body"></tbody>
-                    </table>
+                    <div style="overflow-x: auto;">
+                        <table>
+                            <thead>
+                                <tr><th>الصنف</th><th>القسم</th><th>التكلفة</th><th>البيع</th><th>المخزون</th><th>الوحدة</th><th>النوع</th><th>إجراءات</th></tr>
+                            </thead>
+                            <tbody id="products-table-body"></tbody>
+                        </table>
+                    </div>
                 </div>
 
                 <!-- TAB 3: Shifts History -->
@@ -374,20 +410,20 @@
                 <div id="tab-users" class="tab-pane">
                     <h3 style="color: var(--text-main); margin-bottom: 24px; font-weight: 800;"><i class="fa-solid fa-users" style="color: var(--accent-primary);"></i> إدارة حسابات الموظفين</h3>
                     
-                    <form id="user-form" onsubmit="saveUser(event)" style="background: var(--bg-surface); padding: 22px; border-radius: var(--radius-md); border: 1px solid var(--border-color); margin-bottom: 24px; display: flex; gap: 16px; flex-wrap: wrap; align-items: flex-end;">
+                    <form id="user-form" style="background: var(--bg-surface); padding: 22px; border-radius: var(--radius-md); border: 1px solid var(--border-color); margin-bottom: 24px; display: flex; gap: 16px; flex-wrap: wrap; align-items: flex-end;" onsubmit="saveUser(event)">
                         <input type="hidden" id="usr-id">
 
-                        <div class="form-group-floating">
+                        <div class="form-group-floating" style="flex: 1; min-width: 180px;">
                             <label for="usr-name"><i class="fa-solid fa-user"></i> اسم المستخدم</label>
                             <input type="text" id="usr-name" placeholder="اسم المستخدم" required>
                         </div>
 
-                        <div class="form-group-floating">
+                        <div class="form-group-floating" style="flex: 1; min-width: 180px;">
                             <label for="usr-pin"><i class="fa-solid fa-key"></i> رمز الدخول (PIN)</label>
                             <input type="password" id="usr-pin" placeholder="****">
                         </div>
 
-                        <div class="form-group-floating">
+                        <div class="form-group-floating" style="flex: 1; min-width: 180px;">
                             <label for="usr-role"><i class="fa-solid fa-user-shield"></i> الصلاحية</label>
                             <select id="usr-role">
                                 <option value="cashier">كاشير (Cashier)</option>
@@ -395,17 +431,19 @@
                             </select>
                         </div>
 
-                        <button type="submit" style="background: var(--accent-success); color: white; border: none; padding: 11px 26px; border-radius: var(--radius-sm); cursor: pointer; font-weight: 700; height: 44px;">
+                        <button type="submit" style="background: var(--accent-success); color: white; border: none; padding: 11px 26px; border-radius: var(--radius-sm); cursor: pointer; font-weight: 700; height: 46px;">
                             <i class="fa-solid fa-user-plus"></i> حفظ الحساب
                         </button>
                     </form>
 
-                    <table>
-                        <thead>
-                            <tr><th>#</th><th>اسم المستخدم</th><th>الدور</th><th>إجراءات</th></tr>
-                        </thead>
-                        <tbody id="users-table-body"></tbody>
-                    </table>
+                    <div style="overflow-x: auto;">
+                        <table>
+                            <thead>
+                                <tr><th>#</th><th>اسم المستخدم</th><th>الدور</th><th>إجراءات</th></tr>
+                            </thead>
+                            <tbody id="users-table-body"></tbody>
+                        </table>
+                    </div>
                 </div>
 
             </div>
@@ -481,6 +519,12 @@
             background: '#1f293d',
             color: '#f9fafb'
         });
+
+        // تنسيق الأرقام لتجنب الأصفار الزائدة على اليسار
+        function formatMoney(val) {
+            const num = Number(val) || 0;
+            return num.toLocaleString('ar-EG');
+        }
 
         function showAlert(title, icon = 'info', text = '') {
             Swal.fire({
@@ -637,7 +681,7 @@
                     <div class="product-card" onclick="handleProductClick(${p.id})">
                         <div>
                             <div class="product-title">${p.name}</div>
-                            <div class="product-price">${hasVariants ? 'خيارات متعددة' : p.selling_price + ' ج.م'}</div>
+                            <div class="product-price">${hasVariants ? 'خيارات متعددة' : formatMoney(p.selling_price) + ' ج.م'}</div>
                         </div>
                         <div class="product-badge">${p.is_drink ? 'مشروب/خدمة' : 'المخزون: ' + p.stock_quantity + ' ' + (p.unit_type || 'قطعة')}</div>
                     </div>`;
@@ -656,7 +700,7 @@
                     const finalPrice = p.selling_price + v.price_modifier;
                     container.innerHTML += `
                         <button class="btn-action btn-info" onclick="selectVariantAndAddToCart('${v.variant_name}', ${v.price_modifier}, ${v.cost_modifier})">
-                            ${v.variant_name} (${finalPrice} ج.م)
+                            ${v.variant_name} (${formatMoney(finalPrice)} ج.م)
                         </button>`;
                 });
 
@@ -725,7 +769,7 @@
                     <div class="cart-item">
                         <div class="cart-item-info">
                             <span class="cart-item-title">${item.name}</span>
-                            <span class="cart-item-price">${item.price * item.qty} ج.م (${item.price} ج.م)</span>
+                            <span class="cart-item-price">${formatMoney(item.price * item.qty)} ج.م (${formatMoney(item.price)} ج.م)</span>
                         </div>
                         <div class="cart-qty-controls">
                             <button class="qty-btn" onclick="changeQty(${index}, -1)">-</button>
@@ -736,17 +780,17 @@
                     </div>`;
             });
 
-            document.getElementById('cart-subtotal').innerText = `${total} ج.م`;
-            document.getElementById('cart-total').innerText = `${total} ج.م`;
+            document.getElementById('cart-subtotal').innerText = `${formatMoney(total)} ج.م`;
+            document.getElementById('cart-total').innerText = `${formatMoney(total)} ج.م`;
             calculateChange();
         }
 
         function calculateChange() {
-            const total = parseFloat(document.getElementById('cart-subtotal').innerText) || 0;
+            const total = parseFloat(document.getElementById('cart-subtotal').innerText.replace(/[^\d.]/g, '')) || 0;
             const paid = parseFloat(document.getElementById('paid-amount').value) || 0;
             const changeBox = document.getElementById('change-box');
             if (paid > total && total > 0) {
-                changeBox.innerText = `الباقي للعميل: ${paid - total} ج.م (يُحسب كـ Tip تلقائياً)`;
+                changeBox.innerText = `الباقي للعميل: ${formatMoney(paid - total)} ج.م (يُحسب كـ Tip تلقائياً)`;
             } else {
                 changeBox.innerText = '';
             }
@@ -765,7 +809,7 @@
             if (res.ok) {
                 const data = await res.json();
                 let msg = 'تم إتمام البيع بنجاح';
-                if (data.tip > 0) msg += `<br><span style="color:#f59e0b;">🎁 إجمالي التيبس: <b>${data.tip} ج.م</b></span>`;
+                if (data.tip > 0) msg += `<br><span style="color:#f59e0b;">🎁 إجمالي التيبس: <b>${formatMoney(data.tip)} ج.م</b></span>`;
 
                 Swal.fire({ title: 'تمت العملية', html: msg, icon: 'success', background: '#1f293d', color: '#f9fafb', confirmButtonColor: '#10b981' });
 
@@ -784,8 +828,8 @@
             const res = await fetch(`/api/shift-summary/${currentShiftId}`);
             if (res.ok) {
                 const data = await res.json();
-                document.getElementById('live-sales').innerText = `${data.total_sales} ج.م`;
-                document.getElementById('live-tips').innerText = `${data.total_tips} ج.م`;
+                document.getElementById('live-sales').innerText = `${formatMoney(data.total_sales)} ج.م`;
+                document.getElementById('live-tips').innerText = `${formatMoney(data.total_tips)} ج.م`;
             }
         }
 
@@ -819,14 +863,14 @@
             }
         }
 
-        /* --- Admin Code --- */
+        /* --- Admin Dashboard Code --- */
         async function loadAdminDashboard() {
             const res = await fetch('/api/admin/dashboard');
             const data = await res.json();
             products = data.products;
 
-            document.getElementById('stat-collected-cost').innerText = `${data.stats.collected_stock_cost} ج.م`;
-            document.getElementById('stat-remaining-cost').innerText = `${data.stats.remaining_stock_cost} ج.م`;
+            document.getElementById('stat-collected-cost').innerText = `${formatMoney(data.stats.collected_stock_cost)} ج.م`;
+            document.getElementById('stat-remaining-cost').innerText = `${formatMoney(data.stats.remaining_stock_cost)} ج.م`;
 
             loadUsersTable();
 
@@ -836,16 +880,20 @@
                 const monthKey = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
                 const dateKey = s.shift_date;
 
+                const sales = Number(s.total_sales) || 0;
+                const profit = Number(s.total_profit) || 0;
+                const tips = Number(s.total_tips) || 0;
+
                 if (!structuredData[monthKey]) structuredData[monthKey] = { sales: 0, profit: 0, tips: 0, days: {} };
                 if (!structuredData[monthKey].days[dateKey]) structuredData[monthKey].days[dateKey] = { sales: 0, profit: 0, tips: 0, shifts: [] };
 
-                structuredData[monthKey].sales += s.total_sales;
-                structuredData[monthKey].profit += s.total_profit;
-                structuredData[monthKey].tips += s.total_tips;
+                structuredData[monthKey].sales += sales;
+                structuredData[monthKey].profit += profit;
+                structuredData[monthKey].tips += tips;
 
-                structuredData[monthKey].days[dateKey].sales += s.total_sales;
-                structuredData[monthKey].days[dateKey].profit += s.total_profit;
-                structuredData[monthKey].days[dateKey].tips += s.total_tips;
+                structuredData[monthKey].days[dateKey].sales += sales;
+                structuredData[monthKey].days[dateKey].profit += profit;
+                structuredData[monthKey].days[dateKey].tips += tips;
                 structuredData[monthKey].days[dateKey].shifts.push(s);
             });
 
@@ -871,9 +919,9 @@
                                 <td><b>${s.username}</b></td>
                                 <td>${new Date(s.start_time).toLocaleTimeString('ar-EG')}</td>
                                 <td>${s.end_time ? new Date(s.end_time).toLocaleTimeString('ar-EG') : 'جارٍ...'}</td>
-                                <td><b style="color:var(--accent-primary);">${s.total_sales} ج.م</b></td>
-                                <td style="color:var(--accent-success);"><b>${s.total_profit} ج.م</b></td>
-                                <td style="color:var(--accent-purple);"><b>${s.total_tips} ج.م</b></td>
+                                <td><b style="color:var(--accent-primary);">${formatMoney(s.total_sales)} ج.م</b></td>
+                                <td style="color:var(--accent-success);"><b>${formatMoney(s.total_profit)} ج.م</b></td>
+                                <td style="color:var(--accent-purple);"><b>${formatMoney(s.total_tips)} ج.م</b></td>
                                 <td>${statusBtn}</td>
                                 <td>${s.notes || '-'}</td>
                                 <td>
@@ -889,13 +937,24 @@
                             <div class="day-header" onclick="toggleAccordion('accordion-day-${dateKey}', event)">
                                 <span>📅 يوم: ${dateKey} (${dayInfo.shifts.length} شيفت)</span>
                                 <span style="font-size: 13px; font-weight: normal;">
-                                    مبيعات: <b style="color:var(--accent-primary);">${dayInfo.sales} ج.م</b> | أرباح: <b style="color:var(--accent-success);">${dayInfo.profit} ج.م</b> | تيبس: <b style="color:var(--accent-purple);">${dayInfo.tips} ج.م</b> 🔽
+                                    مبيعات: <b style="color:var(--accent-primary);">${formatMoney(dayInfo.sales)} ج.م</b> | أرباح: <b style="color:var(--accent-success);">${formatMoney(dayInfo.profit)} ج.م</b> | تيبس: <b style="color:var(--accent-purple);">${formatMoney(dayInfo.tips)} ج.م</b> 🔽
                                 </span>
                             </div>
                             <div class="day-content">
                                 <table>
                                     <thead>
-                                        <tr><th>#</th><th>الكاشير</th><th>بدء</th><th>إغلاق</th><th>المبيعات</th><th>الربح</th><th>التيبس</th><th>الحالة</th><th>ملاحظات</th><th>المبيعات</th></tr>
+                                        <tr>
+                                            <th>#</th>
+                                            <th>الكاشير</th>
+                                            <th>بدء</th>
+                                            <th>إغلاق</th>
+                                            <th>المبيعات</th>
+                                            <th>الربح</th>
+                                            <th>التيبس</th>
+                                            <th>الحالة</th>
+                                            <th>ملاحظات</th>
+                                            <th>المبيعات التفصيلية</th>
+                                        </tr>
                                     </thead>
                                     <tbody>${tableRows}</tbody>
                                 </table>
@@ -908,7 +967,7 @@
                         <div class="month-header" onclick="toggleAccordion('accordion-month-${monthKey}', event)">
                             <span>🗓️ شهر: ${monthKey}</span>
                             <span style="font-size: 13px; font-weight: normal;">
-                                إجمالي: <b style="color:var(--accent-primary);">${monthInfo.sales} ج.م</b> | الأرباح: <b style="color:var(--accent-success);">${monthInfo.profit} ج.م</b> | التيبس: <b style="color:var(--accent-purple);">${monthInfo.tips} ج.م</b> 🔽
+                                إجمالي: <b style="color:var(--accent-primary);">${formatMoney(monthInfo.sales)} ج.م</b> | الأرباح: <b style="color:var(--accent-success);">${formatMoney(monthInfo.profit)} ج.م</b> | التيبس: <b style="color:var(--accent-purple);">${formatMoney(monthInfo.tips)} ج.م</b> 🔽
                             </span>
                         </div>
                         <div class="month-content">${daysHtml}</div>
@@ -920,7 +979,7 @@
             products.forEach(p => {
                 prodBody.innerHTML += `
                     <tr>
-                        <td><b>${p.name}</b></td><td>${p.category}</td><td>${p.cost_price} ج.م</td><td>${p.selling_price} ج.م</td>
+                        <td><b>${p.name}</b></td><td>${p.category}</td><td>${formatMoney(p.cost_price)} ج.م</td><td>${formatMoney(p.selling_price)} ج.م</td>
                         <td>${p.is_drink ? '-' : p.stock_quantity}</td>
                         <td><b style="color:var(--accent-primary);">${p.unit_type || 'قطعة'}</b></td>
                         <td>${p.is_drink ? 'مشروب/خدمة' : 'بضاعة/خامة'}</td>
@@ -1019,9 +1078,13 @@
             });
 
             Toast.fire({ icon: 'success', title: 'تم حفظ الصنف' });
+            resetProductForm();
+            loadAdminDashboard();
+        }
+
+        function resetProductForm() {
             document.getElementById('product-form').reset();
             document.getElementById('prod-id').value = '';
-            loadAdminDashboard();
         }
 
         function editProduct(p) {
@@ -1033,6 +1096,7 @@
             document.getElementById('prod-stock').value = p.stock_quantity;
             document.getElementById('prod-unit').value = p.unit_type || 'قطعة';
             document.getElementById('prod-is-drink').checked = p.is_drink === 1;
+            window.scrollTo({ top: 0, behavior: 'smooth' });
         }
 
         async function openIngredientsModal(productId, productName) {
@@ -1150,8 +1214,8 @@
                         <tr>
                             <td><b>${item.name}</b> <small style="color:var(--text-muted);">(${item.category})</small></td>
                             <td>${item.quantity}</td>
-                            <td>${item.unit_price} ج.م</td>
-                            <td><b style="color:var(--accent-primary);">${item.subtotal} ج.م</b></td>
+                            <td>${formatMoney(item.unit_price)} ج.م</td>
+                            <td><b style="color:var(--accent-primary);">${formatMoney(item.subtotal)} ج.م</b></td>
                             <td>${new Date(item.created_at).toLocaleTimeString('ar-EG')}</td>
                         </tr>`;
                 });
