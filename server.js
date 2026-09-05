@@ -1,7 +1,6 @@
 const express = require('express');
 const { Pool } = require('pg');
-const path = path = require('path');
-
+const path = require('path'); // ✅ التعديل الصحيح
 const app = express();
 const PORT = process.env.PORT || 3000;
 
