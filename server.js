@@ -4,8 +4,15 @@ const path = require('path');
 const fs = require('fs');
 
 const app = express();
+const PORT = process.env.PORT || 3000; // 1. تعريف البورت لمنصة الرفع أو التشغيل المحلي
+
 app.use(express.json());
-app.use(express.static('public'));
+app.use(express.static(path.join(__dirname, 'public'))); // خدمة ملفات الـ public
+
+// توجيه الصفحة الرئيسية لملف index.html
+app.get('/', (req, res) => {
+    res.sendFile(path.join(__dirname, 'public', 'index.html'));
+});
 
 const dbPath = './cafe.db';
 const db = new sqlite3.Database(dbPath, (err) => {
@@ -375,4 +382,5 @@ app.post('/api/admin/force-close-shift', (req, res) => {
             res.json({ message: 'تم الإغلاق' });
         });
 });
+
 app.listen(PORT, () => console.log(`🚀 شغال على البورت ${PORT} - حواسب كافيه ❤️`));
