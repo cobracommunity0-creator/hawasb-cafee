@@ -262,7 +262,6 @@
         let selectedProductForVariant = null;
         let currentEditingVariantProductId = null;
 
-        // إعدادات التنبيهات السريعة (Toast) بواسطة SweetAlert2
         const Toast = Swal.mixin({
             toast: true,
             position: 'top-end',
@@ -273,7 +272,6 @@
             color: '#f8fafc'
         });
 
-        // دالة إشعارات تنبيه عامة
         function showAlert(title, icon = 'info', text = '') {
             Swal.fire({
                 title: title,
@@ -286,7 +284,6 @@
             });
         }
 
-        // دعم زر Enter في شاشة الدخول
         function handleLoginKey(event) {
             if (event.key === 'Enter') {
                 login();
@@ -297,66 +294,101 @@
             const username = document.getElementById('username').value;
             const pin = document.getElementById('pin').value;
 
-            const res = await fetch('/api/login', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ username, pin })
-            });
+            try {
+                const res = await fetch('/api/login', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ username, pin })
+                });
 
-            if (res.ok) {
-                const data = await res.json();
-                currentUser = data.user;
+                if (res.ok) {
+                    const data = await res.json();
+                    currentUser = data.user;
 
-                document.getElementById('login-screen').classList.add('hidden');
-                document.getElementById('main-header').classList.remove('hidden');
-                document.getElementById('user-display').innerText = `المستخدم: ${currentUser.username}`;
+                    document.getElementById('login-screen').classList.add('hidden');
+                    document.getElementById('main-header').classList.remove('hidden');
+                    document.getElementById('user-display').innerText = `المستخدم: ${currentUser.username}`;
 
-                Toast.fire({ icon: 'success', title: `أهلاً بك، ${currentUser.username}` });
+                    Toast.fire({ icon: 'success', title: `أهلاً بك، ${currentUser.username}` });
 
-                if (currentUser.role === 'admin') {
-                    document.getElementById('admin-screen').classList.remove('hidden');
-                    loadAdminDashboard();
-                } else {
-                    if (data.activeShift) {
-                        currentShiftId = data.activeShift.id;
+                    if (currentUser.role === 'admin') {
+                        document.getElementById('admin-screen').classList.remove('hidden');
+                        loadAdminDashboard();
                     } else {
-                        const shiftRes = await fetch('/api/start-shift', {
-                            method: 'POST',
-                            headers: { 'Content-Type': 'application/json' },
-                            body: JSON.stringify({ user_id: currentUser.id })
-                        });
-                        const shiftData = await shiftRes.json();
-                        currentShiftId = shiftData.shift_id;
-                    }
+                        if (data.activeShift) {
+                            currentShiftId = data.activeShift.id;
+                        } else {
+                            const shiftRes = await fetch('/api/start-shift', {
+                                method: 'POST',
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify({ user_id: currentUser.id })
+                            });
+                            const shiftData = await shiftRes.json();
+                            currentShiftId = shiftData.shift_id;
+                        }
 
-                    document.getElementById('shift-display').innerText = `(الشيفت الحالي: #${currentShiftId})`;
-                    document.getElementById('pos-screen').classList.remove('hidden');
-                    loadProducts();
-                    renderCart();
-                    loadLiveShiftSummary();
+                        document.getElementById('shift-display').innerText = `(الشيفت الحالي: #${currentShiftId})`;
+                        document.getElementById('pos-screen').classList.remove('hidden');
+                        
+                        // تحميل وعرض المنتجات للكاشير
+                        await loadProducts();
+                        renderCart();
+                        loadLiveShiftSummary();
+                    }
+                } else { 
+                    showAlert('خطأ في تسجيل الدخول', 'error', 'بيانات الدخول غير صحيحة'); 
                 }
-            } else { 
-                showAlert('خطأ في تسجيل الدخول', 'error', 'بيانات الدخول غير صحيحة'); 
+            } catch (err) {
+                console.error("Login Error:", err);
+                showAlert('خطأ في الاتصال', 'error', 'تعذر الاتصال بالسيرفر');
             }
         }
 
         async function loadProducts() {
-            const res = await fetch('/api/products');
-            products = await res.json();
+            try {
+                const res = await fetch('/api/products');
+                if (!res.ok) throw new Error('فشل في جلب المنتجات');
+                
+                products = await res.json();
 
-            for (let p of products) {
-                const varRes = await fetch(`/api/product-variants/${p.id}`);
-                p.variants = await varRes.json();
+                for (let p of products) {
+                    try {
+                        const varRes = await fetch(`/api/product-variants/${p.id}`);
+                        if (varRes.ok) {
+                            p.variants = await varRes.json();
+                        } else {
+                            p.variants = [];
+                        }
+                    } catch (e) {
+                        p.variants = [];
+                    }
+                    p.selling_price = parseFloat(p.selling_price) || 0;
+                    p.cost_price = parseFloat(p.cost_price) || 0;
+                }
+
+                renderProductsGrid();
+            } catch (err) {
+                console.error("Error loading products:", err);
+                showAlert('خطأ في التحميل', 'error', 'لم نتمكن من تحميل قائمة المنتجات');
+            }
+        }
+
+        function renderProductsGrid() {
+            const grid = document.getElementById('products-grid');
+            if (!grid) return;
+            
+            grid.innerHTML = '';
+            if (products.length === 0) {
+                grid.innerHTML = '<p style="color:var(--text-muted); grid-column: 1/-1; text-align:center;">لا توجد منتجات مسجلة في النظام.</p>';
+                return;
             }
 
-            const grid = document.getElementById('products-grid');
-            grid.innerHTML = '';
             products.forEach(p => {
                 const hasVariants = p.variants && p.variants.length > 0;
                 grid.innerHTML += `
                     <div class="card" onclick="handleProductClick(${p.id})">
                         <h4>${p.name}</h4>
-                        <p>${hasVariants ? 'خيارات متعددة' : p.selling_price + ' ج.م'}</p>
+                        <p style="color:var(--accent-gold); font-weight:bold; margin:5px 0;">${hasVariants ? 'خيارات متعددة' : p.selling_price.toFixed(2) + ' ج.م'}</p>
                         <small style="color:var(--text-muted);">${p.is_drink ? 'مشروب/خدمة' : 'مخزون: ' + p.stock_quantity}</small>
                     </div>`;
             });
@@ -364,6 +396,7 @@
 
         function handleProductClick(id) {
             const p = products.find(x => x.id === id);
+            if (!p) return;
             if (p.variants && p.variants.length > 0) {
                 selectedProductForVariant = p;
                 document.getElementById('variant-modal-title').innerText = `خيارات ${p.name}`;
@@ -371,10 +404,12 @@
                 container.innerHTML = '';
 
                 p.variants.forEach(v => {
-                    const finalPrice = p.selling_price + v.price_modifier;
+                    const priceMod = parseFloat(v.price_modifier) || 0;
+                    const costMod = parseFloat(v.cost_modifier) || 0;
+                    const finalPrice = p.selling_price + priceMod;
                     container.innerHTML += `
-                        <button class="btn-action btn-info" onclick="selectVariantAndAddToCart('${v.variant_name}', ${v.price_modifier}, ${v.cost_modifier})">
-                            ${v.variant_name} (${finalPrice} ج.م)
+                        <button class="btn-action btn-info" onclick="selectVariantAndAddToCart('${v.variant_name}', ${priceMod}, ${costMod})">
+                            ${v.variant_name} (${finalPrice.toFixed(2)} ج.م)
                         </button>`;
                 });
 
@@ -387,8 +422,8 @@
         function selectVariantAndAddToCart(variantName, priceModifier, costModifier) {
             const p = selectedProductForVariant;
             const fullName = `${p.name} (${variantName})`;
-            const finalPrice = p.selling_price + priceModifier;
-            const finalCost = p.cost_price + costModifier;
+            const finalPrice = p.selling_price + (parseFloat(priceModifier) || 0);
+            const finalCost = p.cost_price + (parseFloat(costModifier) || 0);
 
             addToCart(p.id, fullName, finalPrice, finalCost);
             closeVariantModal();
@@ -397,11 +432,14 @@
         function closeVariantModal() { document.getElementById('variant-modal').classList.add('hidden'); }
 
         function addToCart(id, name, price, cost) {
+            const numPrice = parseFloat(price) || 0;
+            const numCost = parseFloat(cost) || 0;
+
             const item = cart.find(x => x.cartItemId === `${id}_${name}`);
             if (item) {
                 item.qty++;
             } else {
-                cart.push({ cartItemId: `${id}_${name}`, id, name, price, cost, qty: 1 });
+                cart.push({ cartItemId: `${id}_${name}`, id, name, price: numPrice, cost: numCost, qty: 1 });
             }
             saveCartAndRender();
             Toast.fire({ icon: 'success', title: `تمت إضافة ${name}` });
@@ -419,17 +457,19 @@
 
         function renderCart() {
             const list = document.getElementById('cart-list');
+            if (!list) return;
             list.innerHTML = '';
             let total = 0;
             cart.forEach((item, index) => {
-                total += item.price * item.qty;
+                const itemTotal = (parseFloat(item.price) || 0) * item.qty;
+                total += itemTotal;
                 list.innerHTML += `
                     <div class="cart-item">
                         <span>${item.name} x${item.qty}</span>
-                        <div><b>${item.price * item.qty} ج.م</b> <button onclick="removeFromCart(${index})" style="background:var(--accent-red); color:white; border:none; padding:2px 8px; border-radius:4px; margin-right:5px; cursor:pointer;">×</button></div>
+                        <div><b>${itemTotal.toFixed(2)} ج.م</b> <button onclick="removeFromCart(${index})" style="background:var(--accent-red); color:white; border:none; padding:2px 8px; border-radius:4px; margin-right:5px; cursor:pointer;">×</button></div>
                     </div>`;
             });
-            document.getElementById('cart-total').innerText = total;
+            document.getElementById('cart-total').innerText = total.toFixed(2);
             calculateChange();
         }
 
@@ -438,7 +478,7 @@
             const paid = parseFloat(document.getElementById('paid-amount').value) || 0;
             const changeBox = document.getElementById('change-box');
             if (paid > total && total > 0) {
-                changeBox.innerText = `الباقي: ${paid - total} ج.م (يحول تلقائياً لـ Tips)`;
+                changeBox.innerText = `الباقي: ${(paid - total).toFixed(2)} ج.م (يحول تلقائياً لـ Tips)`;
             } else changeBox.innerText = '';
         }
 
@@ -455,7 +495,7 @@
             if (res.ok) {
                 const data = await res.json();
                 let msg = 'تم إتمام واستخراج البيع بنجاح!';
-                if (data.tip > 0) msg += `<br><br><span style="color:#f59e0b; font-size: 16px;">🎁 تم إضافة تيبس للشيفت: <b>${data.tip} ج.م</b></span>`;
+                if (data.tip > 0) msg += `<br><br><span style="color:#f59e0b; font-size: 16px;">🎁 تم إضافة تيبس للشيفت: <b>${parseFloat(data.tip).toFixed(2)} ج.م</b></span>`;
                 
                 Swal.fire({
                     title: 'تم البيع بنجاح',
@@ -474,6 +514,9 @@
                 renderCart();
                 loadProducts();
                 loadLiveShiftSummary();
+            } else {
+                const errData = await res.json().catch(() => ({}));
+                showAlert('خطأ في البيع', 'error', errData.error || 'حدث خطأ أثناء إتمام عملية البيع');
             }
         }
 
@@ -482,8 +525,8 @@
             const res = await fetch(`/api/shift-summary/${currentShiftId}`);
             if (res.ok) {
                 const data = await res.json();
-                document.getElementById('live-sales').innerText = `${data.total_sales} ج.م`;
-                document.getElementById('live-tips').innerText = `${data.total_tips} ج.م`;
+                document.getElementById('live-sales').innerText = `${(parseFloat(data.total_sales) || 0).toFixed(2)} ج.م`;
+                document.getElementById('live-tips').innerText = `${(parseFloat(data.total_tips) || 0).toFixed(2)} ج.م`;
             }
         }
 
@@ -533,8 +576,8 @@
             const data = await res.json();
             products = data.products;
 
-            document.getElementById('stat-collected-cost').innerText = `${data.stats.collected_stock_cost} ج.م`;
-            document.getElementById('stat-remaining-cost').innerText = `${data.stats.remaining_stock_cost} ج.م`;
+            document.getElementById('stat-collected-cost').innerText = `${(parseFloat(data.stats.collected_stock_cost) || 0).toFixed(2)} ج.م`;
+            document.getElementById('stat-remaining-cost').innerText = `${(parseFloat(data.stats.remaining_stock_cost) || 0).toFixed(2)} ج.م`;
 
             loadUsersTable();
 
@@ -545,6 +588,10 @@
                 const monthKey = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
                 const dateKey = s.shift_date;
 
+                const salesNum = parseFloat(s.total_sales) || 0;
+                const profitNum = parseFloat(s.total_profit) || 0;
+                const tipsNum = parseFloat(s.total_tips) || 0;
+
                 if (!structuredData[monthKey]) {
                     structuredData[monthKey] = { sales: 0, profit: 0, tips: 0, days: {} };
                 }
@@ -552,13 +599,13 @@
                     structuredData[monthKey].days[dateKey] = { sales: 0, profit: 0, tips: 0, shifts: [] };
                 }
 
-                structuredData[monthKey].sales += s.total_sales;
-                structuredData[monthKey].profit += s.total_profit;
-                structuredData[monthKey].tips += s.total_tips;
+                structuredData[monthKey].sales += salesNum;
+                structuredData[monthKey].profit += profitNum;
+                structuredData[monthKey].tips += tipsNum;
 
-                structuredData[monthKey].days[dateKey].sales += s.total_sales;
-                structuredData[monthKey].days[dateKey].profit += s.total_profit;
-                structuredData[monthKey].days[dateKey].tips += s.total_tips;
+                structuredData[monthKey].days[dateKey].sales += salesNum;
+                structuredData[monthKey].days[dateKey].profit += profitNum;
+                structuredData[monthKey].days[dateKey].tips += tipsNum;
                 structuredData[monthKey].days[dateKey].shifts.push(s);
             });
 
@@ -578,15 +625,19 @@
                             ? `<button onclick="forceCloseShift(${s.id})" style="background:#e67e22; color:white; border:none; padding:4px 8px; border-radius:4px; cursor:pointer;">إغلاق طوارئ</button>`
                             : '<span style="color:var(--accent-green);">مغلق</span>';
 
+                        const sSales = (parseFloat(s.total_sales) || 0).toFixed(2);
+                        const sProfit = (parseFloat(s.total_profit) || 0).toFixed(2);
+                        const sTips = (parseFloat(s.total_tips) || 0).toFixed(2);
+
                         tableRows += `
                             <tr>
                                 <td>#${s.id}</td>
                                 <td><b>${s.username}</b></td>
                                 <td>${new Date(s.start_time).toLocaleTimeString('ar-EG')}</td>
                                 <td>${s.end_time ? new Date(s.end_time).toLocaleTimeString('ar-EG') : 'جارٍ...'}</td>
-                                <td><b style="color:var(--accent-gold);">${s.total_sales} ج.م</b></td>
-                                <td style="color:var(--accent-green);"><b>${s.total_profit} ج.م</b></td>
-                                <td style="color:#a855f7;"><b>${s.total_tips} ج.م</b></td>
+                                <td><b style="color:var(--accent-gold);">${sSales} ج.م</b></td>
+                                <td style="color:var(--accent-green);"><b>${sProfit} ج.م</b></td>
+                                <td style="color:#a855f7;"><b>${sTips} ج.م</b></td>
                                 <td>${statusBtn}</td>
                                 <td>${s.notes || '-'}</td>
                                 <td>
@@ -602,7 +653,7 @@
                             <div class="day-header" onclick="toggleAccordion('accordion-day-${dateKey}', event)">
                                 <span>📅 يوم: ${dateKey} (${dayInfo.shifts.length} شيفت)</span>
                                 <span style="font-size: 13px; font-weight: normal;">
-                                    مبيعات: <b style="color:var(--accent-gold);">${dayInfo.sales} ج.م</b> | أرباح: <b style="color:var(--accent-green);">${dayInfo.profit} ج.م</b> | تيبس: <b style="color:#a855f7;">${dayInfo.tips} ج.م</b> 🔽
+                                    مبيعات: <b style="color:var(--accent-gold);">${dayInfo.sales.toFixed(2)} ج.م</b> | أرباح: <b style="color:var(--accent-green);">${dayInfo.profit.toFixed(2)} ج.م</b> | تيبس: <b style="color:#a855f7;">${dayInfo.tips.toFixed(2)} ج.م</b> 🔽
                                 </span>
                             </div>
                             <div class="day-content">
@@ -623,7 +674,7 @@
                         <div class="month-header" onclick="toggleAccordion('accordion-month-${monthKey}', event)">
                             <span>🗓️ شهر: ${monthKey}</span>
                             <span style="font-size: 14px; font-weight: normal;">
-                                إجمالي الشهر: <b style="color:var(--accent-gold);">${monthInfo.sales} ج.م</b> | الأرباح: <b style="color:var(--accent-green);">${monthInfo.profit} ج.م</b> | التيبس: <b style="color:#a855f7;">${monthInfo.tips} ج.م</b> 🔽
+                                إجمالي الشهر: <b style="color:var(--accent-gold);">${monthInfo.sales.toFixed(2)} ج.م</b> | الأرباح: <b style="color:var(--accent-green);">${monthInfo.profit.toFixed(2)} ج.م</b> | التيبس: <b style="color:#a855f7;">${monthInfo.tips.toFixed(2)} ج.م</b> 🔽
                             </span>
                         </div>
                         <div class="month-content">${daysHtml}</div>
@@ -633,9 +684,11 @@
             const prodBody = document.getElementById('products-table-body');
             prodBody.innerHTML = '';
             products.forEach(p => {
+                const costP = (parseFloat(p.cost_price) || 0).toFixed(2);
+                const sellP = (parseFloat(p.selling_price) || 0).toFixed(2);
                 prodBody.innerHTML += `
                     <tr>
-                        <td>${p.name}</td><td>${p.category}</td><td>${p.cost_price} ج.م</td><td>${p.selling_price} ج.م</td>
+                        <td>${p.name}</td><td>${p.category}</td><td>${costP} ج.م</td><td>${sellP} ج.م</td>
                         <td>${p.is_drink ? '-' : p.stock_quantity}</td><td>${p.is_drink ? 'مشروب/خدمة' : 'بضاعة'}</td>
                         <td>
                             <button onclick='editProduct(${JSON.stringify(p)})' style="background:var(--accent-blue); color:white; border:none; padding:4px 8px; border-radius:4px; cursor:pointer;">تعديل</button>
@@ -647,7 +700,6 @@
             });
         }
 
-        // --- إدارة المستخدمين ---
         async function loadUsersTable() {
             const res = await fetch('/api/admin/users');
             const users = await res.json();
@@ -750,12 +802,16 @@
         async function openIngredientsModal(productId, productName) {
             currentEditingParentId = productId;
             document.getElementById('ing-modal-title').innerText = `🧪 ضبط مكونات (${productName})`;
-            const res = await fetch(`/api/product-ingredients/${productId}`);
-            const existingIngredients = await res.json();
-            const container = document.getElementById('ingredients-form-container');
-            container.innerHTML = '';
-            if (existingIngredients.length === 0) addIngredientRow();
-            else existingIngredients.forEach(ing => addIngredientRow(ing.ingredient_id, ing.quantity_required));
+            try {
+                const res = await fetch(`/api/product-ingredients/${productId}`);
+                const existingIngredients = res.ok ? await res.json() : [];
+                const container = document.getElementById('ingredients-form-container');
+                container.innerHTML = '';
+                if (existingIngredients.length === 0) addIngredientRow();
+                else existingIngredients.forEach(ing => addIngredientRow(ing.ingredient_id, ing.quantity_required));
+            } catch (err) {
+                console.error("Error opening ingredients modal:", err);
+            }
             document.getElementById('ingredients-modal').classList.remove('hidden');
         }
 
@@ -798,14 +854,18 @@
         async function openAdminVariantsModal(productId, productName) {
             currentEditingVariantProductId = productId;
             document.getElementById('admin-var-modal-title').innerText = `⚙️ أحجام وخيارات (${productName})`;
-            const res = await fetch(`/api/product-variants/${productId}`);
-            const variants = await res.json();
-            const container = document.getElementById('admin-variants-form-container');
-            container.innerHTML = '';
-            if (variants.length === 0) {
-                addVariantRow('كبير', 10, 5);
-                addVariantRow('صغير', 0, 0);
-            } else variants.forEach(v => addVariantRow(v.variant_name, v.price_modifier, v.cost_modifier));
+            try {
+                const res = await fetch(`/api/product-variants/${productId}`);
+                const variants = res.ok ? await res.json() : [];
+                const container = document.getElementById('admin-variants-form-container');
+                container.innerHTML = '';
+                if (variants.length === 0) {
+                    addVariantRow('كبير', 10, 5);
+                    addVariantRow('صغير', 0, 0);
+                } else variants.forEach(v => addVariantRow(v.variant_name, v.price_modifier, v.cost_modifier));
+            } catch (err) {
+                console.error("Error loading variants:", err);
+            }
             document.getElementById('admin-variants-modal').classList.remove('hidden');
         }
 
@@ -851,19 +911,21 @@
         async function openLiveShiftModal(shiftId, username) {
             document.getElementById('modal-title').innerText = `🔴 تفاصيل المبيعات الحية - شيفت #${shiftId} (${username})`;
             const res = await fetch(`/api/admin/shift-live-details/${shiftId}`);
-            const sales = await res.json();
+            const sales = res.ok ? await res.json() : [];
 
             const body = document.getElementById('live-details-body');
             body.innerHTML = '';
             if (sales.length === 0) body.innerHTML = '<tr><td colspan="5" style="color:var(--text-muted);">لا توجد مبيعات.</td></tr>';
             else {
                 sales.forEach(item => {
+                    const uPrice = (parseFloat(item.unit_price) || 0).toFixed(2);
+                    const subT = (parseFloat(item.subtotal) || 0).toFixed(2);
                     body.innerHTML += `
                         <tr>
                             <td><b>${item.name}</b> <small style="color:var(--text-muted);">(${item.category})</small></td>
                             <td>${item.quantity}</td>
-                            <td>${item.unit_price} ج.م</td>
-                            <td><b style="color:var(--accent-gold);">${item.subtotal} ج.م</b></td>
+                            <td>${uPrice} ج.م</td>
+                            <td><b style="color:var(--accent-gold);">${subT} ج.م</b></td>
                             <td>${new Date(item.created_at).toLocaleTimeString('ar-EG')}</td>
                         </tr>`;
                 });
@@ -904,8 +966,8 @@
                 id: document.getElementById('prod-id').value || null,
                 name: document.getElementById('prod-name').value,
                 category: document.getElementById('prod-category').value,
-                cost_price: parseFloat(document.getElementById('prod-cost').value),
-                selling_price: parseFloat(document.getElementById('prod-price').value),
+                cost_price: parseFloat(document.getElementById('prod-cost').value) || 0,
+                selling_price: parseFloat(document.getElementById('prod-price').value) || 0,
                 stock_quantity: parseInt(document.getElementById('prod-stock').value) || 0,
                 is_drink: document.getElementById('prod-is-drink').checked
             };
@@ -929,7 +991,7 @@
             document.getElementById('prod-cost').value = p.cost_price;
             document.getElementById('prod-price').value = p.selling_price;
             document.getElementById('prod-stock').value = p.stock_quantity;
-            document.getElementById('prod-is-drink').checked = p.is_drink === 1;
+            document.getElementById('prod-is-drink').checked = (p.is_drink === 1 || p.is_drink === true);
         }
 
         function logout() { location.reload(); }
