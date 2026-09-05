@@ -46,8 +46,8 @@ async function initDB() {
                 id SERIAL PRIMARY KEY,
                 product_id INT REFERENCES products(id) ON DELETE CASCADE,
                 variant_name VARCHAR(255),
-                price_modifier NUMERIC DEFAULT 0,
-                cost_modifier NUMERIC DEFAULT 0
+                selling_price NUMERIC DEFAULT 0,  -- سعر بيع هذا الحجم/الخيار مباشر
+                cost_price NUMERIC DEFAULT 0      -- تكلفة هذا الحجم/الخيار مباشر
             );
             CREATE TABLE IF NOT EXISTS shifts (
                 id SERIAL PRIMARY KEY,
